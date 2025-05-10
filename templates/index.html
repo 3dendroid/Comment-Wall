@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Anonymous Comment Wall</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 0 10px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+    }
+    form {
+      margin-bottom: 20px;
+    }
+    textarea {
+      width: 100%;
+      height: 80px;
+      padding: 10px;
+      font-size: 1rem;
+      resize: vertical;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .form-actions {
+      display: inline-flex;
+      align-items: center;
+      margin-top: 10px;
+    }
+    .error-message {
+      margin-left: 10px;
+      color: red;
+      font-size: 0.9rem;
+    }
+    .success-message {
+      margin-left: 10px;
+      color: green;
+      font-size: 0.9rem;
+    }
+    .comment {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f3f3f3;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      word-break: break-word;
+    }
+    .comment-text {
+      flex-grow: 1;
+      padding-right: 10px;
+    }
+    .delete-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      display: none;
+    }
+    .admin-mode .delete-btn {
+      display: inline-block !important;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧱 Anonymous Comment Wall</h1>
+  <button onclick="enableAdmin()">🔐 Admin Mode</button>
+
+  <form id="commentForm">
+    <textarea name="text" id="comment-input" placeholder="Leave a comment..." required></textarea>
+    <input type="text" name="botcheck" style="display:none;" />
+    <div class="form-actions">
+      <button type="submit">Submit</button>
+      <div id="form-error" class="error-message"></div>
+    </div>
+  </form>
+
+  <div id="comments">
+    {% for comment in comments %}
+    <div class="comment" data-id="{{ comment.id }}">
+      <div class="comment-text">{{ comment.text }}</div>
+      <button class="delete-btn" onclick="deleteComment({{ comment.id }})">Delete</button>
+    </div>
+    {% endfor %}
+  </div>
+
+  <script>
+    let adminToken = null;
+    const form = document.getElementById("commentForm");
+    const errorDiv = document.getElementById("form-error");
+
+    async function enableAdmin() {
+      const token = prompt("Enter admin token:");
+      if (!token) return;
+      errorDiv.className = 'error-message';
+      errorDiv.textContent = '';
+      try {
+        const res = await fetch("/admin-verify", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          adminToken = token;
+          document.body.classList.add("admin-mode");
+          errorDiv.className = 'success-message';
+          errorDiv.textContent = data.message;
+        } else {
+          errorDiv.textContent = data.error;
+        }
+      } catch (err) {
+        console.error(err);
+        errorDiv.textContent = "Error verifying admin token.";
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorDiv.className = 'error-message';
+      errorDiv.textContent = "";
+
+      if (form.botcheck.value) {
+        errorDiv.textContent = "Bot detected.";
+        return;
+      }
+
+      const text = form.text.value.trim();
+      if (!text) return;
+
+      // disable button and start 5s cooldown
+      const btn = form.querySelector("button[type=submit]");
+      btn.disabled = true;
+      let cooldown = 5;
+      const origText = btn.textContent;
+      btn.textContent = `Wait ${cooldown}s`;
+      const timer = setInterval(() => {
+        cooldown--;
+        if (cooldown > 0) {
+          btn.textContent = `Wait ${cooldown}s`;
+        } else {
+          clearInterval(timer);
+          btn.disabled = false;
+          btn.textContent = origText;
+        }
+      }, 1000);
+
+      try {
+        const res = await fetch("/comments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          location.reload();
+        } else if (res.status === 429) {
+          errorDiv.textContent = "You're commenting too quickly. Please wait a few seconds.";
+        } else if (data.error === "Inappropriate content") {
+          errorDiv.textContent = "Your comment contains inappropriate language.";
+        } else {
+          errorDiv.textContent = "Failed to post comment.";
+        }
+      } catch (err) {
+        console.error(err);
+        errorDiv.textContent = "Something went wrong. Please try again.";
+      }
+    });
+
+    async function deleteComment(id) {
+      errorDiv.className = 'error-message';
+      errorDiv.textContent = "";
+
+      if (!adminToken) {
+        errorDiv.textContent = "You are not authorized to delete comments.";
+        return;
+      }
+      try {
+        const res = await fetch(`/comments/${id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${adminToken}` }
+        });
+        if (res.ok) {
+          document.querySelector(`[data-id="${id}"]`).remove();
+        } else {
+          errorDiv.textContent = "Failed to delete comment.";
+        }
+      } catch (err) {
+        console.error(err);
+        errorDiv.textContent = "Something went wrong while deleting.";
+      }
+    }
+  </script>
+</body>
+</html>

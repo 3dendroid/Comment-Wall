@@ -1,8 +1,10 @@
-### Comment Wall
+### Anonymous Comment Wall ver. 1.0
 
 ```
-comment_wall_project/
+comment-wall/
 ├── app.py
+├── templates/
+│   └── index.html
 ├── requirements.txt
-└── instance/comments.db (database)
+└── Procfile
 ```
