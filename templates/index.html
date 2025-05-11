@@ -64,7 +64,7 @@
       }
     }
 
-    // Submit new comment (no immediate prepend)
+    // Submit new comment
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       errorDiv.textContent = "";
@@ -82,7 +82,7 @@
         const data = await res.json();
         if (res.ok) {
           form.text.value = "";
-          // let polling add this new comment
+          // we'll pick up this new comment on next refresh
         } else if (res.status === 429) {
           errorDiv.textContent = "You're commenting too quickly. Please wait a few seconds.";
         } else {
@@ -93,26 +93,6 @@
         errorDiv.textContent = "Something went wrong.";
       }
     });
-
-    // Create and insert a comment element at the top
-    function prependComment(c) {
-      const div = document.createElement("div");
-      div.className = "comment";
-      div.dataset.id = c.id;
-      const txt = document.createElement("div");
-      txt.className = "comment-text";
-      txt.textContent = c.text;
-      div.appendChild(txt);
-      if (adminToken) {
-        const btn = document.createElement("button");
-        btn.className = "delete-btn";
-        btn.textContent = "Delete";
-        btn.onclick = () => deleteComment(c.id);
-        div.appendChild(btn);
-      }
-      commentsDiv.insertBefore(div, commentsDiv.firstChild);
-      displayedIds.add(c.id);
-    }
 
     // Delete a comment
     async function deleteComment(id) {
@@ -126,11 +106,7 @@
           method: "DELETE",
           headers: { "Authorization": `Bearer ${adminToken}` }
         });
-        if (res.ok) {
-          const el = document.querySelector(`[data-id="${id}"]`);
-          if (el) el.remove();
-          displayedIds.delete(id);
-        } else {
+        if (!res.ok) {
           const data = await res.json();
           errorDiv.textContent = data.error || "Failed to delete.";
         }
@@ -140,40 +116,42 @@
       }
     }
 
-    // === Polling for additions and deletions ===
-    let displayedIds = new Set();
-    // Initialize from server-rendered comments
-    document.querySelectorAll("#comments .comment").forEach(div => {
-      displayedIds.add(+div.dataset.id);
-    });
-
-    setInterval(async () => {
+    // === Simple polling: full refresh every 5 seconds ===
+    async function refreshComments() {
       try {
         const res = await fetch("/comments");
         if (!res.ok) return;
-        const list = await res.json(); // sorted descending by id
-        const fetchedIds = new Set(list.map(c => c.id));
+        const list = await res.json(); // newest first
 
-        // Add new comments
+        // clear existing comments
+        commentsDiv.innerHTML = "";
+
+        // re-render all comments
         list.forEach(c => {
-          if (!displayedIds.has(c.id)) {
-            prependComment(c);
+          const div = document.createElement("div");
+          div.className = "comment";
+          div.dataset.id = c.id;
+          const txt = document.createElement("div");
+          txt.className = "comment-text";
+          txt.textContent = c.text;
+          div.appendChild(txt);
+          if (adminToken) {
+            const btn = document.createElement("button");
+            btn.className = "delete-btn";
+            btn.textContent = "Delete";
+            btn.onclick = () => deleteComment(c.id);
+            div.appendChild(btn);
           }
+          commentsDiv.appendChild(div);
         });
-
-        // Remove deleted comments
-        displayedIds.forEach(id => {
-          if (!fetchedIds.has(id)) {
-            const el = document.querySelector(`[data-id="${id}"]`);
-            if (el) el.remove();
-            displayedIds.delete(id);
-          }
-        });
-
       } catch (err) {
         console.error("Polling error:", err);
       }
-    }, 5000);
+    }
+
+    // initial load + repeat every 5 seconds
+    refreshComments();
+    setInterval(refreshComments, 5000);
   </script>
 </body>
 </html>
