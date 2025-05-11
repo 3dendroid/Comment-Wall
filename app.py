@@ -42,7 +42,7 @@ def contains_bad_words(text: str) -> bool:
     """Return True if the text contains any prohibited word as a standalone word."""
     return bool(BAD_RE.search(text))
 
-# Define the Comment model
+# Define the Comment model for storing comments
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.String(500), nullable=False)
