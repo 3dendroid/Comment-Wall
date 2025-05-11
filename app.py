@@ -1,9 +1,8 @@
 import os
-
 from flask import Flask, request, jsonify, render_template
+from flask_sqlalchemy import SQLAlchemy
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_sqlalchemy import SQLAlchemy
 
 # Create Flask application
 app = Flask(__name__)
