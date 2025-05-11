@@ -46,7 +46,7 @@
     const errorDiv = document.getElementById("form-error");
     const commentsDiv = document.getElementById("comments");
 
-    // prompt for admin token
+    // Prompt for admin token
     async function enableAdmin() {
       const token = prompt("Enter admin token:");
       if (!token) return;
@@ -64,7 +64,7 @@
       }
     }
 
-    // submit new comment
+    // Submit new comment (no immediate prepend)
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       errorDiv.textContent = "";
@@ -81,8 +81,8 @@
         });
         const data = await res.json();
         if (res.ok) {
-          prependComment(data);
           form.text.value = "";
+          // let polling add this new comment
         } else if (res.status === 429) {
           errorDiv.textContent = "You're commenting too quickly. Please wait a few seconds.";
         } else {
@@ -94,7 +94,7 @@
       }
     });
 
-    // add a comment element at the top
+    // Create and insert a comment element at the top
     function prependComment(c) {
       const div = document.createElement("div");
       div.className = "comment";
@@ -114,7 +114,7 @@
       displayedIds.add(c.id);
     }
 
-    // delete a comment
+    // Delete a comment
     async function deleteComment(id) {
       errorDiv.textContent = "";
       if (!adminToken) {
@@ -142,7 +142,7 @@
 
     // === Polling for additions and deletions ===
     let displayedIds = new Set();
-    // initialize from server-rendered comments
+    // Initialize from server-rendered comments
     document.querySelectorAll("#comments .comment").forEach(div => {
       displayedIds.add(+div.dataset.id);
     });
@@ -154,14 +154,14 @@
         const list = await res.json(); // sorted descending by id
         const fetchedIds = new Set(list.map(c => c.id));
 
-        // 1) Add new comments
+        // Add new comments
         list.forEach(c => {
           if (!displayedIds.has(c.id)) {
             prependComment(c);
           }
         });
 
-        // 2) Remove deleted comments
+        // Remove deleted comments
         displayedIds.forEach(id => {
           if (!fetchedIds.has(id)) {
             const el = document.querySelector(`[data-id="${id}"]`);
