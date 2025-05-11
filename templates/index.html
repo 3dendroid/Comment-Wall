@@ -46,7 +46,7 @@
     const errorDiv = document.getElementById("form-error");
     const commentsDiv = document.getElementById("comments");
 
-    // Admin mode
+    // prompt for admin token
     async function enableAdmin() {
       const token = prompt("Enter admin token:");
       if (!token) return;
@@ -64,7 +64,7 @@
       }
     }
 
-    // Submit new comment (and prepend it)
+    // submit new comment
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       errorDiv.textContent = "";
@@ -85,10 +85,8 @@
           form.text.value = "";
         } else if (res.status === 429) {
           errorDiv.textContent = "You're commenting too quickly. Please wait a few seconds.";
-        } else if (data.error === "Inappropriate content") {
-          errorDiv.textContent = "Inappropriate language detected.";
         } else {
-          errorDiv.textContent = "Failed to post comment.";
+          errorDiv.textContent = data.error || "Failed to post comment.";
         }
       } catch (err) {
         console.error(err);
@@ -96,7 +94,7 @@
       }
     });
 
-    // Prepend a single comment element
+    // add a comment element at the top
     function prependComment(c) {
       const div = document.createElement("div");
       div.className = "comment";
@@ -113,48 +111,67 @@
         div.appendChild(btn);
       }
       commentsDiv.insertBefore(div, commentsDiv.firstChild);
-      // update maxId for polling
-      maxId = Math.max(maxId, c.id);
+      displayedIds.add(c.id);
     }
 
-    // Delete comment
+    // delete a comment
     async function deleteComment(id) {
       errorDiv.textContent = "";
       if (!adminToken) {
         errorDiv.textContent = "Unauthorized to delete.";
         return;
       }
-      const res = await fetch(`/comments/${id}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${adminToken}` }
-      });
-      if (res.ok) {
-        document.querySelector(`[data-id="${id}"]`).remove();
-      } else {
-        const data = await res.json();
-        errorDiv.textContent = data.error || "Failed to delete.";
+      try {
+        const res = await fetch(`/comments/${id}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${adminToken}` }
+        });
+        if (res.ok) {
+          const el = document.querySelector(`[data-id="${id}"]`);
+          if (el) el.remove();
+          displayedIds.delete(id);
+        } else {
+          const data = await res.json();
+          errorDiv.textContent = data.error || "Failed to delete.";
+        }
+      } catch (err) {
+        console.error(err);
+        errorDiv.textContent = "Error deleting comment.";
       }
     }
 
-    // === Polling for new comments ===
-    let maxId = 0;
+    // === Polling for additions and deletions ===
+    let displayedIds = new Set();
+    // initialize from server-rendered comments
     document.querySelectorAll("#comments .comment").forEach(div => {
-      maxId = Math.max(maxId, +div.dataset.id);
+      displayedIds.add(+div.dataset.id);
     });
 
     setInterval(async () => {
       try {
         const res = await fetch("/comments");
         if (!res.ok) return;
-        const list = await res.json();
-        // list is sorted DESC, so reverse for ASC
-        list.slice().reverse().forEach(c => {
-          if (c.id > maxId) {
+        const list = await res.json(); // sorted descending by id
+        const fetchedIds = new Set(list.map(c => c.id));
+
+        // 1) Add new comments
+        list.forEach(c => {
+          if (!displayedIds.has(c.id)) {
             prependComment(c);
           }
         });
+
+        // 2) Remove deleted comments
+        displayedIds.forEach(id => {
+          if (!fetchedIds.has(id)) {
+            const el = document.querySelector(`[data-id="${id}"]`);
+            if (el) el.remove();
+            displayedIds.delete(id);
+          }
+        });
+
       } catch (err) {
-        console.error(err);
+        console.error("Polling error:", err);
       }
     }, 5000);
   </script>
