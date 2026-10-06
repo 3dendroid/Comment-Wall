@@ -1,3 +1,6 @@
 .idea/
 templates/
 instance/
+.git/
+__pycache__/
+*.pyc
