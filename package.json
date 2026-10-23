@@ -1,0 +1,21 @@
+{
+  "name": "comment-wall",
+  "version": "1.0.0",
+  "description": "A small Flask app for posting anonymous comments.",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/3dendroid/Comment-Wall.git"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/3dendroid/Comment-Wall/issues"
+  },
+  "homepage": "https://github.com/3dendroid/Comment-Wall#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.5"
+  }
+}

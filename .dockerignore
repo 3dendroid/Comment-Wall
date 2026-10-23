@@ -3,3 +3,11 @@ instance/
 .git/
 __pycache__/
 *.pyc
+e2e
+node_modules/
+package-lock.json
+package.json
+playwright.config.ts
+playwright-report/
+test-results/
+tsconfig.json
