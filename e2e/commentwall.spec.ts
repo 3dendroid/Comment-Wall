@@ -16,3 +16,14 @@ test('check button', async ({ page }) => {
   await expect(submitButton).toHaveText('Submit');
   await expect(submitButton).toHaveAttribute('type', 'submit');
 });
+
+test('UI shows the same number of comments as the API', async ({ page, request }) => {
+  // 1. Get comments from the API
+  const response = await request.get('/comments');
+  await expect(response).toBeOK();
+  const comments = await response.json();
+
+  // 2. Open the page and compare
+  await page.goto('/');
+  await expect(page.locator('.comment-text')).toHaveCount(comments.length);
+});
