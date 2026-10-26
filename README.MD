@@ -1,6 +1,10 @@
 # Anonymous Comment Wall
 
+![Playwright Tests](https://github.com/3dendroid/Comment-Wall/actions/workflows/playwright.yml/badge.svg)
+
 A small Flask app for posting anonymous comments.
+
+Live: https://commentwall.up.railway.app/
 
 Features: bad-words filter, rate limiting, admin mode for deleting comments.
 Storage: PostgreSQL in production, SQLite fallback for local runs.
@@ -14,9 +18,18 @@ comment-wall/
 │   └── index.html
 ├── bad_words.txt
 ├── requirements.txt
-├── Procfile          # Railway deployment
-├── Dockerfile        # container image
-└── .dockerignore
+├── Procfile               # Railway deployment
+├── Dockerfile             # container image
+├── .dockerignore
+├── e2e/                   # Playwright tests
+│   ├── commentwall.spec.ts   # UI tests + UI vs API check
+│   ├── api.spec.ts           # negative API tests
+│   └── db.spec.ts            # API vs database check
+├── playwright.config.ts
+├── tsconfig.json
+├── package.json
+└── .github/workflows/
+    └── playwright.yml     # CI
 ```
 
 ## Run with Docker / Podman
@@ -34,3 +47,30 @@ Open http://localhost:8080
 |---|---|---|
 | `DATABASE_URL` | PostgreSQL connection string | SQLite in `instance/` |
 | `ADMIN_TOKEN` | token for admin mode | — |
+
+## Tests
+
+End-to-end tests with **Playwright + TypeScript**. They run against the live app on Railway.
+
+| File | What it checks |
+|---|---|
+| `commentwall.spec.ts` | page title, submit button, number of comments on the page = number in the API |
+| `api.spec.ts` | `DELETE` without token → 401, `POST` with empty text → 400 |
+| `db.spec.ts` | number of comments in the API = number of rows in PostgreSQL |
+
+### Run locally
+
+```bash
+npm ci
+npx playwright install chromium
+npx playwright test
+npx playwright show-report
+```
+
+`db.spec.ts` needs `DATABASE_URL`. Put it in a `.env` file in the project root. `.env` is in `.gitignore` and `.dockerignore`, so it is never committed or copied into the image.
+
+### CI
+
+GitHub Actions runs the tests on every pull request and push to `main`.
+In CI, `DATABASE_URL` comes from an encrypted repository secret.
+`main` is protected: a pull request can't be merged until the tests pass.
