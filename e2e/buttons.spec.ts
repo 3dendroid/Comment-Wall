@@ -5,8 +5,6 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('Check "Submit" button', async ({ page }) => {
-  await page.goto('/');
-
   // Expect the button to be visible, have the correct text, and have the correct type attribute.
   const submitButton = page.getByRole('button', { name: 'Submit' });
   await expect(submitButton).toBeVisible();
@@ -15,9 +13,7 @@ test('Check "Submit" button', async ({ page }) => {
 });
 
 test('Check "Theme change" button', async ({ page }) => {
-  await page.goto('/');
-
-  // Expect the button to be visible, have the correct text, and have the correct type attribute.
+  // Check visibility, text and id
   const switchThemeButton_light = page.getByRole('button', { name: '☀️ Switch Theme' });
   const switchThemeButton_dark = page.getByRole('button', { name: '🌙 Switch Theme' });
 
@@ -33,9 +29,7 @@ test('Check "Theme change" button', async ({ page }) => {
 });
 
 test('Check "Admin" button', async ({ page }) => {
-  await page.goto('/');
-
-  // Expect the button to be visible, have the correct text, and have the correct type attribute.
+  // Check visibility, text and onclick
   const adminButton = page.getByRole('button', { name: '🔐 Admin Mode' });
   await expect(adminButton).toBeVisible();
   await expect(adminButton).toHaveText('🔐 Admin Mode');

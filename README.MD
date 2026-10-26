@@ -23,6 +23,7 @@ comment-wall/
 ├── .dockerignore
 ├── e2e/                   # Playwright tests
 │   ├── commentwall.spec.ts   # UI tests + UI vs API check
+│   ├── buttons.spec.ts       # button tests
 │   ├── api.spec.ts           # negative API tests
 │   └── db.spec.ts            # API vs database check
 ├── playwright.config.ts
@@ -43,20 +44,21 @@ Open http://localhost:8080
 
 ## Configuration
 
-| Variable | Purpose | Default |
-|---|---|---|
+| Variable       | Purpose                      | Default               |
+| -------------- | ---------------------------- | --------------------- |
 | `DATABASE_URL` | PostgreSQL connection string | SQLite in `instance/` |
-| `ADMIN_TOKEN` | token for admin mode | — |
+| `ADMIN_TOKEN`  | token for admin mode         | —                     |
 
 ## Tests
 
 End-to-end tests with **Playwright + TypeScript**. They run against the live app on Railway.
 
-| File | What it checks |
-|---|---|
-| `commentwall.spec.ts` | page title, submit button, number of comments on the page = number in the API |
-| `api.spec.ts` | `DELETE` without token → 401, `POST` with empty text → 400 |
-| `db.spec.ts` | number of comments in the API = number of rows in PostgreSQL |
+| File                  | What it checks                                                                                     |
+| --------------------- | -------------------------------------------------------------------------------------------------- |
+| `commentwall.spec.ts` | page title, placeholder in the comment input, number of comments on the page = number in the API   |
+| `buttons.spec.ts`     | Submit, Admin Mode and theme buttons are visible; the theme button changes its label after a click |
+| `api.spec.ts`         | `DELETE` without token → 401, `POST` with empty text → 400                                         |
+| `db.spec.ts`          | number of comments in the API = number of rows in PostgreSQL                                       |
 
 ### Run locally
 
