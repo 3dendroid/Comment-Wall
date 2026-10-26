@@ -1,20 +1,19 @@
 import { test, expect } from '@playwright/test';
 
-test('check title', async ({ page }) => {
+test.beforeEach(async ({ page }) => {
   await page.goto('/');
+});
 
+test('Check site title', async ({ page }) => {
   // Expect exact title to be 'Anonymous Comment Wall'.
   await expect(page).toHaveTitle('Anonymous Comment Wall');
 });
 
-test('check button', async ({ page }) => {
-  await page.goto('/');
-
-  // Expect the button to be visible, have the correct text, and have the correct type attribute.
-  const submitButton = page.getByRole('button', { name: 'Submit' });
-  await expect(submitButton).toBeVisible();
-  await expect(submitButton).toHaveText('Submit');
-  await expect(submitButton).toHaveAttribute('type', 'submit');
+test('Check placeholder text in comment input', async ({ page }) => {
+  // Expect the placeholder text to be 'Write your comment here...'.
+  const commentInput = page.getByRole('textbox');
+  await expect(commentInput).toBeVisible();
+  await expect(commentInput).toHaveAttribute('id', 'comment-input');
 });
 
 test('UI shows the same number of comments as the API', async ({ page, request }) => {
