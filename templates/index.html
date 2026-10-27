@@ -145,6 +145,22 @@
         <button class="delete-btn" onclick="deleteComment({{ comment.id }})">Delete</button>
       </div>
       {% endfor %}
+
+      <!-- ⚠️ DEMO comments — only to preview the spin locally via Live Server. REMOVE before deploy. -->
+      <div class="comment">
+        <div class="comment-text">Hello, this is the first test comment!</div>
+      </div>
+      <div class="comment"><div class="comment-text">Spinning cats everywhere 🐱🐱🐱</div></div>
+      <div class="comment"><div class="comment-text">Short one.</div></div>
+      <div class="comment">
+        <div class="comment-text">
+          A slightly longer comment so you can clearly see it rotate around its own center.
+        </div>
+      </div>
+      <div class="comment">
+        <div class="comment-text">Last demo comment — delete me before Railway.</div>
+      </div>
+      <!-- ⚠️ end DEMO comments -->
     </div>
 
     <script>
@@ -277,7 +293,7 @@
         catAudio = document.createElement('audio');
         catAudio.src = '/static/cat.mp3';
         catAudio.loop = true;
-        catAudio.volume = 0.25; // 30% громкости
+        catAudio.volume = 0.25; // 25% volume
         document.body.appendChild(catAudio);
         catAudio.play().catch(() => {});
 
@@ -317,14 +333,18 @@
           setTimeout(() => gif.remove(), 10000);
         }, 500);
 
-        // after 3.5s: spin every element + flash the screen every 2s
+        // after 3.5s: spin each comment in a RANDOM direction + random speed
         delayTimer = setTimeout(() => {
           const allStyle = document.createElement('style');
-          allStyle.textContent =
-            '@keyframes spin-all{to{transform:rotate(360deg)}}' +
-            'body *{animation:spin-all 5s linear infinite}';
+          allStyle.textContent = '@keyframes spin-all{to{transform:rotate(360deg)}}';
           document.head.appendChild(allStyle);
           catStyles.push(allStyle);
+
+          document.querySelectorAll('.comment').forEach((c) => {
+            const dir = Math.random() < 0.5 ? 'normal' : 'reverse'; // CW or CCW
+            const dur = (3 + Math.random() * 4).toFixed(1); // 3–7s, so speeds differ too
+            c.style.animation = `spin-all ${dur}s linear infinite ${dir}`;
+          });
 
           flashTimer = setInterval(() => {
             catOverlay.style.opacity = '1';
@@ -354,6 +374,7 @@
           catOverlay = null;
         }
         document.querySelectorAll('.cat-gif').forEach((el) => el.remove());
+        document.querySelectorAll('.comment').forEach((c) => (c.style.animation = '')); // clear per-comment spin
         catStyles.forEach((s) => s.remove());
         catStyles = [];
       }
