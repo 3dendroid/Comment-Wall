@@ -122,6 +122,6 @@ def verify_admin():
 
 
 if __name__ == "__main__":
-    # Local development: listen on the port defined by environment or default 15000
-    port = int(os.environ.get("PORT", 15000))
+    # Local development: listen on the port defined by environment or default 20000
+    port = int(os.environ.get("PORT", 20000))
     app.run(host="0.0.0.0", port=port)
