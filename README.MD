@@ -6,7 +6,7 @@ A small Flask app for posting anonymous comments.
 
 Live: https://commentwall.up.railway.app/
 
-Features: bad-words filter, rate limiting, admin mode for deleting comments.
+Features: bad-words filter, rate limiting, admin mode for deleting comments, and a 🐱 Make fun button (spinning cats + music, click again to stop).
 Storage: PostgreSQL in production, SQLite fallback for local runs.
 
 ## Project structure
@@ -16,6 +16,9 @@ comment-wall/
 ├── app.py
 ├── templates/
 │   └── index.html
+├── static/                # cat gif + music for the 🐱 button
+│   ├── cat.gif
+│   └── cat.mp3
 ├── bad_words.txt
 ├── requirements.txt
 ├── Procfile               # Railway deployment

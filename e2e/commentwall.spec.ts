@@ -5,8 +5,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('Check site title', async ({ page }) => {
-  // Expect exact title to be 'Anonymous Comment Wall'.
-  await expect(page).toHaveTitle('Anonymous Comment Wall');
+  // Expect exact title to be 'Comment Wall'.
+  await expect(page).toHaveTitle('Comment Wall');
 });
 
 test('Check placeholder text in comment input', async ({ page }) => {
