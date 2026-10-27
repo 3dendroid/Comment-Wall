@@ -1,245 +1,366 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Anonymous Comment Wall</title>
-  <style>
-    /* ================ box-sizing ================ */
-    html { box-sizing: border-box; }
-    *, *::before, *::after { box-sizing: inherit; }
+  <head>
+    <meta charset="UTF-8" />
+    <title>Comment Wall</title>
+    <style>
+      /* ================ box-sizing ================ */
+      html {
+        box-sizing: border-box;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: inherit;
+      }
 
-    /* ================ Theme variables & base ================ */
-    body {
-      font-family: sans-serif;
-      max-width: 600px;
-      margin: 20px auto;
-      padding: 0 10px;
-      background: #fff;
-      color: #000;
-      transition: background 0.3s, color 0.3s;
-    }
-    body.dark {
-      background: #121212;
-      color: #eee;
-    }
+      /* ================ Theme variables & base ================ */
+      body {
+        font-family: sans-serif;
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 0 10px;
+        background: #fff;
+        color: #000;
+        transition: background 0.3s, color 0.3s;
+      }
+      body.dark {
+        background: #121212;
+        color: #eee;
+      }
 
-    /* ================ Header & controls ================ */
-    h1 {
-      text-align: center;
-      font-size: 1.8rem;
-    }
-    .controls {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-    /* common button style */
-    .controls button,
-    .form-actions button {
-      background: #e0e0e0;
-      border: 1px solid #ccc;
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: background 0.3s, color 0.3s;
-    }
-    body.dark .controls button,
-    body.dark .form-actions button {
-      background: #2e2e2e;
-      border-color: #555;
-      color: #eee;
-    }
+      /* ================ Header & controls ================ */
+      h1 {
+        text-align: center;
+        font-size: 1.8rem;
+      }
+      .controls {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      /* common button style */
+      .controls button,
+      .form-actions button {
+        background: #e0e0e0;
+        border: 1px solid #ccc;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: background 0.3s, color 0.3s;
+      }
+      body.dark .controls button,
+      body.dark .form-actions button {
+        background: #2e2e2e;
+        border-color: #555;
+        color: #eee;
+      }
 
-    /* ================ Form styling ================ */
-    form { margin-bottom: 20px; }
-    textarea {
-      width: 100%;
-      height: 80px;
-      padding: 10px;
-      font-size: 1rem;
-      resize: vertical;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      background: inherit;
-      color: inherit;
-      transition: background 0.3s, color 0.3s, border-color 0.3s;
-    }
-    body.dark textarea {
-      border-color: #444;
-    }
-    .form-actions {
-      display: inline-flex;
-      align-items: center;
-      margin-top: 10px;
-    }
-    .error-message {
-      margin-left: 10px;
-      color: red;
-      font-size: 0.9rem;
-    }
+      /* ================ Form styling ================ */
+      form {
+        margin-bottom: 20px;
+      }
+      textarea {
+        width: 100%;
+        height: 80px;
+        padding: 10px;
+        font-size: 1rem;
+        resize: vertical;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: inherit;
+        color: inherit;
+        transition: background 0.3s, color 0.3s, border-color 0.3s;
+      }
+      body.dark textarea {
+        border-color: #444;
+      }
+      .form-actions {
+        display: inline-flex;
+        align-items: center;
+        margin-top: 10px;
+      }
+      .error-message {
+        margin-left: 10px;
+        color: red;
+        font-size: 0.9rem;
+      }
 
-    /* ================ Comments list ================ */
-    .comment {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #f3f3f3;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 6px;
-      word-break: break-word;
-      transition: background 0.3s;
-    }
-    body.dark .comment {
-      background: #1e1e1e;
-    }
-    .comment-text {
-      flex-grow: 1;
-      padding-right: 10px;
-    }
-    .delete-btn {
-      background: #dc3545 !important;
-      color: white !important;
-      border: none !important;
-      display: none;
-    }
-    .admin-mode .delete-btn {
-      display: inline-block !important;
-    }
-  </style>
-</head>
-<body>
-  <h1>🧱 Anonymous Comment Wall</h1>
+      /* ================ Comments list ================ */
+      .comment {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f3f3f3;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 6px;
+        word-break: break-word;
+        transition: background 0.3s;
+      }
+      body.dark .comment {
+        background: #1e1e1e;
+      }
+      .comment-text {
+        flex-grow: 1;
+        padding-right: 10px;
+      }
+      .delete-btn {
+        background: #dc3545 !important;
+        color: white !important;
+        border: none !important;
+        display: none;
+      }
+      .admin-mode .delete-btn {
+        display: inline-block !important;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🧱 Comment Wall</h1>
 
-  <div class="controls">
-    <!-- Theme switch always on the left -->
-    <button id="themeToggle">🌙 Switch Theme</button>
-    <!-- Admin Mode always on the right -->
-    <button onclick="enableAdmin()">🔐 Admin Mode</button>
-  </div>
-
-  <form id="commentForm">
-    <textarea name="text" id="comment-input" placeholder="Leave a comment..." required></textarea>
-    <div class="form-actions">
-      <button type="submit">Submit</button>
-      <div id="form-error" class="error-message"></div>
+    <div class="controls">
+      <!-- Cat chaos trigger -->
+      <button id="catJam">🐱 Make fun</button>
+      <!-- Theme switch -->
+      <button id="themeToggle">🌙 Switch Theme</button>
+      <!-- Admin Mode always on the right -->
+      <button onclick="enableAdmin()">🔐 Admin Mode</button>
     </div>
-  </form>
 
-  <div id="comments">
-    {% for comment in comments %}
-    <div class="comment" data-id="{{ comment.id }}">
-      <div class="comment-text">{{ comment.text }}</div>
-      <button class="delete-btn" onclick="deleteComment({{ comment.id }})">Delete</button>
+    <form id="commentForm">
+      <textarea name="text" id="comment-input" placeholder="Leave a comment..." required></textarea>
+      <div class="form-actions">
+        <button type="submit">Submit</button>
+        <div id="form-error" class="error-message"></div>
+      </div>
+    </form>
+
+    <div id="comments">
+      {% for comment in comments %}
+      <div class="comment" data-id="{{ comment.id }}">
+        <div class="comment-text">{{ comment.text }}</div>
+        <button class="delete-btn" onclick="deleteComment({{ comment.id }})">Delete</button>
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
-  </div>
 
-  <script>
-    // ===== Dark mode toggle =====
-    const themeToggle = document.getElementById('themeToggle');
-    if (localStorage.getItem('theme') === 'dark') {
-      document.body.classList.add('dark');
-    }
-    function updateThemeButton() {
-      const dark = document.body.classList.contains('dark');
-      themeToggle.textContent = (dark ? '☀️' : '🌙') + ' Switch Theme';
-    }
-    updateThemeButton();
-    themeToggle.addEventListener('click', () => {
-      document.body.classList.toggle('dark');
-      localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+    <script>
+      // ===== Dark mode toggle =====
+      const themeToggle = document.getElementById('themeToggle');
+      if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark');
+      }
+      function updateThemeButton() {
+        const dark = document.body.classList.contains('dark');
+        themeToggle.textContent = (dark ? '☀️' : '🌙') + ' Switch Theme';
+      }
       updateThemeButton();
-    });
-
-    // ===== Admin mode =====
-    let adminToken = null;
-    async function enableAdmin() {
-      const token = prompt("Enter admin token:");
-      if (!token) return;
-      document.getElementById('form-error').textContent = '';
-      const res = await fetch("/admin-verify", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
+      themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark');
+        localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+        updateThemeButton();
       });
-      if (res.ok) {
-        adminToken = token;
-        document.body.classList.add('admin-mode');
-      } else {
+
+      // ===== Admin mode =====
+      let adminToken = null;
+      async function enableAdmin() {
+        const token = prompt('Enter admin token:');
+        if (!token) return;
+        document.getElementById('form-error').textContent = '';
+        const res = await fetch('/admin-verify', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          adminToken = token;
+          document.body.classList.add('admin-mode');
+        } else {
+          const data = await res.json();
+          document.getElementById('form-error').textContent = data.error;
+        }
+      }
+
+      // ===== Posting comments =====
+      const form = document.getElementById('commentForm');
+      const errorDiv = document.getElementById('form-error');
+      const commentsDiv = document.getElementById('comments');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorDiv.textContent = '';
+        const text = form.text.value.trim();
+        if (!text) {
+          errorDiv.textContent = 'Comment text is required.';
+          return;
+        }
+        const res = await fetch('/comments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        });
         const data = await res.json();
-        document.getElementById('form-error').textContent = data.error;
-      }
-    }
-
-    // ===== Posting comments =====
-    const form = document.getElementById("commentForm");
-    const errorDiv = document.getElementById("form-error");
-    const commentsDiv = document.getElementById("comments");
-
-    form.addEventListener("submit", async e => {
-      e.preventDefault();
-      errorDiv.textContent = "";
-      const text = form.text.value.trim();
-      if (!text) {
-        errorDiv.textContent = "Comment text is required.";
-        return;
-      }
-      const res = await fetch("/comments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
+        if (res.ok) {
+          form.text.value = '';
+        } else if (res.status === 429) {
+          errorDiv.textContent = "You're commenting too quickly. Please wait.";
+        } else {
+          errorDiv.textContent = data.error || 'Failed to post comment.';
+        }
       });
-      const data = await res.json();
-      if (res.ok) {
-        form.text.value = "";
-      } else if (res.status === 429) {
-        errorDiv.textContent = "You're commenting too quickly. Please wait.";
-      } else {
-        errorDiv.textContent = data.error || "Failed to post comment.";
-      }
-    });
 
-    // ===== Deleting comments =====
-    async function deleteComment(id) {
-      errorDiv.textContent = "";
-      if (!adminToken) {
-        errorDiv.textContent = "Unauthorized to delete.";
-        return;
+      // ===== Deleting comments =====
+      async function deleteComment(id) {
+        errorDiv.textContent = '';
+        if (!adminToken) {
+          errorDiv.textContent = 'Unauthorized to delete.';
+          return;
+        }
+        const res = await fetch(`/comments/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${adminToken}` },
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          errorDiv.textContent = data.error || 'Failed to delete.';
+        }
       }
-      const res = await fetch(`/comments/${id}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${adminToken}` }
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        errorDiv.textContent = data.error || "Failed to delete.";
-      }
-    }
 
-    // ===== Polling for updates =====
-    async function refreshComments() {
-      const res = await fetch("/comments");
-      if (!res.ok) return;
-      const list = await res.json();
-      commentsDiv.innerHTML = "";
-      list.forEach(c => {
-        const el = document.createElement("div");
-        el.className = "comment";
-        el.dataset.id = c.id;
-        el.innerHTML = `
-          <div class="comment-text">${c.text}</div>
-          ${adminToken
-            ? `<button class="delete-btn" onclick="deleteComment(${c.id})">Delete</button>`
-            : ``
+      // ===== Polling for updates =====
+      async function refreshComments() {
+        const res = await fetch('/comments');
+        if (!res.ok) return;
+        const list = await res.json();
+        commentsDiv.innerHTML = '';
+        list.forEach((c) => {
+          const el = document.createElement('div');
+          el.className = 'comment';
+          el.dataset.id = c.id;
+
+          // Build nodes instead of innerHTML string — comment text is set via
+          // textContent, so markup in a comment is shown as text, not executed.
+          const textEl = document.createElement('div');
+          textEl.className = 'comment-text';
+          textEl.textContent = c.text;
+          el.appendChild(textEl);
+
+          if (adminToken) {
+            const btn = document.createElement('button');
+            btn.className = 'delete-btn';
+            btn.textContent = 'Delete';
+            btn.addEventListener('click', () => deleteComment(c.id));
+            el.appendChild(btn);
           }
-        `;
-        commentsDiv.appendChild(el);
+
+          commentsDiv.appendChild(el);
+        });
+      }
+      refreshComments();
+      setInterval(refreshComments, 5000);
+
+      // ===== Cat chaos (toggle on the 🐱 Cat button) =====
+      let chaosOn = false;
+      // references we must keep so we can tear everything down later
+      let catTimer = null,
+        flashTimer = null,
+        delayTimer = null;
+      let catAudio = null,
+        catOverlay = null,
+        catStyles = [];
+
+      function startCatChaos() {
+        chaosOn = true;
+
+        // music — plays now because the click is the user gesture browsers require
+        catAudio = document.createElement('audio');
+        catAudio.src = '/static/cat.mp3';
+        catAudio.loop = true;
+        catAudio.volume = 0.25; // 30% громкости
+        document.body.appendChild(catAudio);
+        catAudio.play().catch(() => {});
+
+        // neon flash overlay — pointerEvents:none so it never blocks clicks
+        catOverlay = document.createElement('div');
+        Object.assign(catOverlay.style, {
+          position: 'fixed',
+          inset: '0',
+          background: '#00FF00',
+          zIndex: 9998,
+          opacity: '0',
+          transition: 'opacity 0.2s',
+          pointerEvents: 'none',
+        });
+        document.body.appendChild(catOverlay);
+
+        const spinStyle = document.createElement('style');
+        spinStyle.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+        document.head.appendChild(spinStyle);
+        catStyles.push(spinStyle);
+
+        // spawn a spinning cat every 500ms; class 'cat-gif' lets us remove them all later
+        catTimer = setInterval(() => {
+          const gif = document.createElement('img');
+          gif.className = 'cat-gif';
+          gif.src = '/static/cat.gif';
+          Object.assign(gif.style, {
+            position: 'fixed',
+            zIndex: 9999,
+            width: '150px',
+            animation: 'spin 2s linear infinite',
+            top: Math.random() * window.innerHeight + 'px',
+            left: Math.random() * window.innerWidth + 'px',
+            pointerEvents: 'none',
+          });
+          document.body.appendChild(gif);
+          setTimeout(() => gif.remove(), 10000);
+        }, 500);
+
+        // after 3.5s: spin every element + flash the screen every 2s
+        delayTimer = setTimeout(() => {
+          const allStyle = document.createElement('style');
+          allStyle.textContent =
+            '@keyframes spin-all{to{transform:rotate(360deg)}}' +
+            'body *{animation:spin-all 5s linear infinite}';
+          document.head.appendChild(allStyle);
+          catStyles.push(allStyle);
+
+          flashTimer = setInterval(() => {
+            catOverlay.style.opacity = '1';
+            setTimeout(() => (catOverlay.style.opacity = '0'), 200);
+          }, 2000);
+        }, 3500);
+      }
+
+      function stopCatChaos() {
+        chaosOn = false;
+
+        // 1. stop the timers (clearTimeout also covers the 3.5s delay if we stop early)
+        clearInterval(catTimer);
+        clearInterval(flashTimer);
+        clearTimeout(delayTimer);
+
+        // 2. stop the music
+        if (catAudio) {
+          catAudio.pause();
+          catAudio.remove();
+          catAudio = null;
+        }
+
+        // 3. remove the elements and injected styles
+        if (catOverlay) {
+          catOverlay.remove();
+          catOverlay = null;
+        }
+        document.querySelectorAll('.cat-gif').forEach((el) => el.remove());
+        catStyles.forEach((s) => s.remove());
+        catStyles = [];
+      }
+
+      document.getElementById('catJam').addEventListener('click', () => {
+        chaosOn ? stopCatChaos() : startCatChaos();
       });
-    }
-    refreshComments();
-    setInterval(refreshComments, 5000);
-  </script>
-</body>
+    </script>
+  </body>
 </html>

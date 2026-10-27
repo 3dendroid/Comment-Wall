@@ -1,37 +1,30 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
+import { CommentWallPage } from './pages/CommentWallPage';
 
-test.beforeEach(async ({ page }) => {
-  await page.goto('/');
-});
-
-test('Check "Submit" button', async ({ page }) => {
+test('Check "Submit" button', async ({ wall }) => {
   // Expect the button to be visible, have the correct text, and have the correct type attribute.
-  const submitButton = page.getByRole('button', { name: 'Submit' });
-  await expect(submitButton).toBeVisible();
-  await expect(submitButton).toHaveText('Submit');
-  await expect(submitButton).toHaveAttribute('type', 'submit');
+  await expect(wall.submitButton).toBeVisible();
+  await expect(wall.submitButton).toHaveText('Submit');
+  await expect(wall.submitButton).toHaveAttribute('type', 'submit');
 });
 
-test('Check "Theme change" button', async ({ page }) => {
+test('Check "Theme change" button', async ({ wall }) => {
   // Check visibility, text and id
-  const switchThemeButton_light = page.getByRole('button', { name: '☀️ Switch Theme' });
-  const switchThemeButton_dark = page.getByRole('button', { name: '🌙 Switch Theme' });
 
-  await expect(switchThemeButton_dark).toBeVisible();
-  await expect(switchThemeButton_dark).toHaveText('🌙 Switch Theme');
-  await expect(switchThemeButton_dark).toHaveAttribute('id', 'themeToggle');
+  await expect(wall.switchThemeButton_dark).toBeVisible();
+  await expect(wall.switchThemeButton_dark).toHaveText('🌙 Switch Theme');
+  await expect(wall.switchThemeButton_dark).toHaveAttribute('id', 'themeToggle');
 
-  await switchThemeButton_dark.click();
+  await wall.changeToLightTheme();
 
-  await expect(switchThemeButton_light).toBeVisible();
-  await expect(switchThemeButton_light).toHaveText('☀️ Switch Theme');
-  await expect(switchThemeButton_light).toHaveAttribute('id', 'themeToggle');
+  await expect(wall.switchThemeButton_light).toBeVisible();
+  await expect(wall.switchThemeButton_light).toHaveText('☀️ Switch Theme');
+  await expect(wall.switchThemeButton_light).toHaveAttribute('id', 'themeToggle');
 });
 
-test('Check "Admin" button', async ({ page }) => {
+test('Check "Admin" button', async ({ wall }) => {
   // Check visibility, text and onclick
-  const adminButton = page.getByRole('button', { name: '🔐 Admin Mode' });
-  await expect(adminButton).toBeVisible();
-  await expect(adminButton).toHaveText('🔐 Admin Mode');
-  await expect(adminButton).toHaveAttribute('onclick', 'enableAdmin()');
+  await expect(wall.adminButton).toBeVisible();
+  await expect(wall.adminButton).toHaveText('🔐 Admin Mode');
+  await expect(wall.adminButton).toHaveAttribute('onclick', 'enableAdmin()');
 });
