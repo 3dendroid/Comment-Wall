@@ -6,7 +6,7 @@ A small Flask app for posting anonymous comments.
 
 Live: https://commentwall.up.railway.app/
 
-Features: bad-words filter, rate limiting, admin mode for deleting comments.
+Features: bad-words filter, rate limiting, admin mode for deleting comments, and a 🐱 Make fun button (spinning cats + music, click again to stop).
 Storage: PostgreSQL in production, SQLite fallback for local runs.
 
 ## Project structure
@@ -16,16 +16,22 @@ comment-wall/
 ├── app.py
 ├── templates/
 │   └── index.html
+├── static/                # cat gif + music for the 🐱 button
+│   ├── cat.gif
+│   └── cat.mp3
 ├── bad_words.txt
 ├── requirements.txt
 ├── Procfile               # Railway deployment
 ├── Dockerfile             # container image
 ├── .dockerignore
 ├── e2e/                   # Playwright tests
-│   ├── commentwall.spec.ts   # UI tests + UI vs API check
-│   ├── buttons.spec.ts       # button tests
-│   ├── api.spec.ts           # negative API tests
-│   └── db.spec.ts            # API vs database check
+│   ├── pages/
+│   │   └── CommentWallPage.ts  # Page Object
+│   ├── fixtures.ts             # custom fixture "wall"
+│   ├── commentwall.spec.ts     # UI tests + UI vs API check
+│   ├── buttons.spec.ts         # button tests
+│   ├── api.spec.ts             # negative API tests
+│   └── db.spec.ts              # API vs database check
 ├── playwright.config.ts
 ├── tsconfig.json
 ├── package.json
@@ -52,6 +58,8 @@ Open http://localhost:8080
 ## Tests
 
 End-to-end tests with **Playwright + TypeScript**. They run against the live app on Railway.
+
+UI tests use the **Page Object Model** (`e2e/pages/`) and a **custom fixture** `wall` (`e2e/fixtures.ts`). The fixture creates the page object and opens the page before the test.
 
 | File                  | What it checks                                                                                     |
 | --------------------- | -------------------------------------------------------------------------------------------------- |
