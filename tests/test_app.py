@@ -110,3 +110,24 @@ def test_created_at_column_is_added_to_old_table(tmp_path, monkeypatch):
         assert res.get_json() == [{"id": 1, "text": "old one", "created_at": None}]
     finally:
         sys.modules["app"] = app_module
+
+
+def test_security_headers_on_page_and_api(client):
+    for path in ("/", "/comments"):
+        res = client.get(path)
+        csp = res.headers["Content-Security-Policy"]
+        assert "default-src 'self'" in csp
+        assert "frame-ancestors 'none'" in csp
+        assert "'unsafe-inline'" not in csp
+        assert res.headers["X-Content-Type-Options"] == "nosniff"
+        assert res.headers["Referrer-Policy"] == "same-origin"
+
+
+def test_page_has_no_inline_scripts_styles_or_handlers(client):
+    import re
+
+    html = client.get("/").get_data(as_text=True)
+    assert not re.search(r"<script(?![^>]*\bsrc=)", html)  # every script has src=
+    assert "<style" not in html
+    assert not re.search(r"\son[a-z]+=", html)  # onclick=, onload=, ...
+    assert ' style="' not in html

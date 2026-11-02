@@ -118,6 +118,26 @@ with app.app_context():
             conn.execute(sql_text("ALTER TABLE comment ADD COLUMN created_at TIMESTAMP"))
 
 
+# Everything the page needs comes from this site, so the browser may load nothing
+# else: an injected <script> or inline handler would be refused even if a bug let
+# one through. The page has no inline scripts, styles or event attributes.
+CONTENT_SECURITY_POLICY = "; ".join([
+    "default-src 'self'",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+])
+
+
+@app.after_request
+def set_security_headers(response):
+    response.headers["Content-Security-Policy"] = CONTENT_SECURITY_POLICY
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "same-origin"
+    return response
+
+
 def latest_comments(limit=None, before=None):
     query = Comment.query.order_by(Comment.id.desc())
     if before is not None:

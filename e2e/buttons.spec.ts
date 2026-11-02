@@ -21,9 +21,9 @@ test('Check "Theme change" button', async ({ wall }) => {
 });
 
 test('Check "Admin" button', async ({ wall }) => {
-  // Check visibility and onclick (an icon button, named by its aria-label)
+  // An icon button, named by its aria-label
   await expect(wall.adminButton).toBeVisible();
-  await expect(wall.adminButton).toHaveAttribute('onclick', 'enableAdmin()');
+  await expect(wall.adminButton).toHaveAttribute('id', 'adminButton');
 });
 
 test('Admin button opens the sign-in dialog', async ({ wall, page }) => {
