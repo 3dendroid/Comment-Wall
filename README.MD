@@ -16,7 +16,10 @@ comment-wall/
 ├── app.py
 ├── templates/
 │   └── index.html
-├── static/                # site icon, cat gif + music for the Make fun button
+├── static/                # page CSS/JS, site icon, cat gif + music for the Make fun button
+│   ├── style.css
+│   ├── theme.js           # loaded in <head>: sets the theme before the page is drawn
+│   ├── app.js             # everything else the page does
 │   └── fonts/             # IBM Plex, self-hosted (SIL OFL 1.1, see OFL.txt)
 │   ├── cat.gif
 │   └── cat.mp3
@@ -36,6 +39,7 @@ comment-wall/
 │   ├── buttons.spec.ts         # button tests
 │   ├── api.spec.ts             # negative API tests
 │   ├── ux.spec.ts              # network errors, theme, reduced motion, icon, fonts, double click
+│   ├── security.spec.ts        # CSP header, no CSP violations, admin delete
 │   └── db.spec.ts              # API vs database check
 ├── playwright.config.ts
 ├── tsconfig.json
@@ -76,6 +80,8 @@ kubectl apply -f k8s/deployment.yaml -f k8s/service.yaml
 Rate limits per client IP: 1 `POST` per 5 seconds, 60 `GET /comments` per minute, 10 failed admin attempts per minute.
 The app trusts one proxy hop (`X-Forwarded-For`), as on Railway.
 
+Every response carries a strict `Content-Security-Policy` (`default-src 'self'`, no inline scripts or styles), `X-Content-Type-Options: nosniff` and `Referrer-Policy: same-origin`. Keep page code in `static/`: an inline `<script>`, `style="…"` or `onclick=` would be blocked.
+
 ## Configuration
 
 | Variable       | Purpose                      | Default               |
@@ -105,6 +111,7 @@ UI tests use the **Page Object Model** (`e2e/pages/`) and a **custom fixture** `
 | --------------------- | -------------------------------------------------------------------------------------------------------- |
 | `commentwall.spec.ts` | page title, input placeholder, character counter, page shows the API's first page, a new comment appears right away and is marked "You" |
 | `buttons.spec.ts`     | Post, admin and theme buttons; the theme button switches the theme; the admin button opens the sign-in dialog |
+| `security.spec.ts`    | strict Content-Security-Policy is sent, using the page triggers no CSP violations, an admin can sign in and delete a comment |
 | `ux.spec.ts`          | network errors are shown, theme is set before the page is drawn and follows the device, cats don't spin with "reduce motion", site icon loads, fonts come from this site, a double click posts once |
 | `api.spec.ts`         | `DELETE` without token → 401; `POST` with empty, non-string or too long text → 400                        |
 | `db.spec.ts`          | number of comments in the API = number of rows in PostgreSQL                                             |
@@ -123,7 +130,7 @@ npx playwright show-report
 | `DATABASE_URL`     | used by `db.spec.ts` only together with `BASE_URL` (the production database)                 |
 | `PYTHON`           | Python command for the local server, `python` by default                                     |
 
-The local test server never receives `DATABASE_URL`, so a production URL in `.env` is safe: tests can't write to the production database by accident.
+The local test server gets a throwaway `ADMIN_TOKEN` (`e2e-admin-token`) for the admin tests and never receives `DATABASE_URL`, so a production URL in `.env` is safe: tests can't write to the production database by accident.
 `.env` is in `.gitignore` and `.dockerignore`, so it is never committed or copied into the image.
 
 ### CI

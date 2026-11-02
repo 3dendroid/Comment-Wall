@@ -1,0 +1,321 @@
+/* ================ Theme tokens ================ */
+:root {
+  --bg: #f4f3ef;
+  --surface: #ffffff;
+  --border: #e2dfd8;
+  --border-strong: #d6d3cc;
+  --input-border: #a8a29e;
+  --text: #18181b;
+  --muted: #57534e;
+  --accent: #1d4ed8;
+  --live: #15803d;
+  --paused: #b45309;
+  --error: #9a3412;
+  --error-bg: #fff4ed;
+  --primary-bg: #18181b;
+  --primary-text: #ffffff;
+  --danger: #b91c1c;
+  --focus: #1d4ed8;
+}
+html.dark {
+  --bg: #141414;
+  --surface: #1f1f1f;
+  --border: #2e2e2e;
+  --border-strong: #3d3d3d;
+  --input-border: #6b6b6b;
+  --text: #ededed;
+  --muted: #b0aaa4;
+  --accent: #8ab4ff;
+  --live: #4ade80;
+  --paused: #fbbf24;
+  --error: #fdba74;
+  --error-bg: #2b1a0f;
+  --primary-bg: #ededed;
+  --primary-text: #141414;
+  --danger: #f87171;
+  --focus: #8ab4ff;
+}
+
+/* ================ Base ================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  transition: background 0.3s, color 0.3s;
+}
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 40px 16px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.btn {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  font-size: 14px;
+}
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.btn-primary {
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 8px;
+  border: none;
+  background: var(--primary-bg);
+  color: var(--primary-text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ================ Header ================ */
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.status-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--live);
+}
+.dot.paused {
+  background: var(--paused);
+}
+.admin-status:empty {
+  display: none;
+}
+.admin-status::before {
+  content: '·';
+  margin-right: 8px;
+}
+.admin-status.error {
+  color: var(--error);
+}
+.controls {
+  display: flex;
+  gap: 8px;
+}
+
+/* ================ Form ================ */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+#commentForm {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+label {
+  font-size: 15px;
+  font-weight: 600;
+}
+textarea,
+dialog input {
+  width: 100%;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 12px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+textarea::placeholder {
+  color: var(--muted);
+}
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.hint {
+  font-size: 13px;
+  color: var(--muted);
+}
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.char-count {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 13px;
+  color: var(--muted);
+}
+.error-message {
+  font-size: 14px;
+  color: var(--error);
+  background: var(--error-bg);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.error-message:empty {
+  display: none;
+}
+
+/* ================ Comments ================ */
+.list-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+.comments-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#comments {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.comment {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: background 0.3s;
+}
+.comment.mine {
+  border: 2px solid var(--accent);
+  padding: 13px 15px;
+}
+.comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.comment-author {
+  font-weight: 600;
+}
+.comment.mine .comment-author {
+  color: var(--accent);
+}
+.comment-text {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.delete-btn {
+  display: none;
+  margin-left: auto;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid var(--danger);
+  background: transparent;
+  color: var(--danger);
+  font-size: 13px;
+}
+.admin-mode .delete-btn {
+  display: inline-block;
+}
+#loadOlder {
+  align-self: center;
+  background: transparent;
+}
+#loadOlder[hidden] {
+  display: none;
+}
+
+/* ================ Admin sign-in dialog ================ */
+dialog {
+  width: min(360px, 90vw);
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+}
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+#adminForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* ================ Make fun ================ */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

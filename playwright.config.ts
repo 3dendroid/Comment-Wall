@@ -9,6 +9,7 @@ import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const LOCAL_URL = 'http://127.0.0.1:20000';
+export const E2E_ADMIN_TOKEN = 'e2e-admin-token';
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -85,6 +86,8 @@ export default defineConfig({
         env: {
           PORT: '20000',
           DATABASE_URL: process.env.E2E_DATABASE_URL || 'sqlite:///e2e.db',
+          // a throwaway token so the admin tests can sign in to the local server
+          ADMIN_TOKEN: E2E_ADMIN_TOKEN,
         },
         reuseExistingServer: !process.env.CI,
       },
