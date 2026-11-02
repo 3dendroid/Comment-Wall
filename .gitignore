@@ -7,3 +7,9 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Local data and IDE settings
+instance/
+.idea/
+__pycache__/
+*.pyc

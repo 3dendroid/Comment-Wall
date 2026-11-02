@@ -4,16 +4,19 @@ export class CommentWallPage {
   readonly page: Page;
   readonly commentInput: Locator;
   readonly submitButton: Locator;
-  readonly switchThemeButton_light: Locator;
-  readonly switchThemeButton_dark: Locator;
+  readonly charCount: Locator;
+  // Named by what a click does: in the light theme the button shows 🌙 and switches to dark.
+  readonly toDarkThemeButton: Locator;
+  readonly toLightThemeButton: Locator;
   readonly adminButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.commentInput = page.getByRole('textbox', { name: 'Comment' });
+    this.commentInput = page.getByLabel('Your comment');
     this.submitButton = page.getByRole('button', { name: 'Submit' });
-    this.switchThemeButton_light = page.getByRole('button', { name: '☀️ Switch Theme' });
-    this.switchThemeButton_dark = page.getByRole('button', { name: '🌙 Switch Theme' });
+    this.charCount = page.locator('#char-count');
+    this.toDarkThemeButton = page.getByRole('button', { name: '🌙 Switch Theme' });
+    this.toLightThemeButton = page.getByRole('button', { name: '☀️ Switch Theme' });
     this.adminButton = page.getByRole('button', { name: '🔐 Admin Mode' });
   }
 
@@ -27,10 +30,10 @@ export class CommentWallPage {
   }
 
   async changeToDarkTheme() {
-    await this.switchThemeButton_light.click();
+    await this.toDarkThemeButton.click();
   }
 
   async changeToLightTheme() {
-    await this.switchThemeButton_dark.click();
+    await this.toLightThemeButton.click();
   }
 }

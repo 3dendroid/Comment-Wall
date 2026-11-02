@@ -47,6 +47,20 @@ spec:
           successThreshold: 1
           failureThreshold: 3
           periodSeconds: 10
+        # Without DATABASE_URL the app falls back to SQLite inside the pod and loses
+        # every comment on restart. Create the secret first, see README.
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: comment-wall
+              key: DATABASE_URL
+        - name: ADMIN_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: comment-wall
+              key: ADMIN_TOKEN
+              optional: true
         ports:
         - containerPort: 8000
           name: http
