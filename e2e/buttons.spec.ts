@@ -10,13 +10,13 @@ test('Check "Post" button', async ({ wall }) => {
 test('Check "Theme change" button', async ({ wall }) => {
   // The page starts in the light theme, so the button offers the dark one
   await expect(wall.toDarkThemeButton).toBeVisible();
-  await expect(wall.page.locator('body')).not.toHaveClass(/dark/);
+  await expect(wall.page.locator('html')).not.toHaveClass(/dark/);
   await expect(wall.toDarkThemeButton).toHaveAttribute('id', 'themeToggle');
 
   await wall.changeToDarkTheme();
 
   await expect(wall.toLightThemeButton).toBeVisible();
-  await expect(wall.page.locator('body')).toHaveClass(/dark/);
+  await expect(wall.page.locator('html')).toHaveClass(/dark/);
   await expect(wall.toLightThemeButton).toHaveAttribute('id', 'themeToggle');
 });
 

@@ -4,12 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Comment Wall</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml" />
+    <!-- Fonts are served from this site, so visitors' browsers don't contact Google -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css') }}" />
+    <script>
+      // Set the theme before anything is drawn, so a dark theme doesn't flash light first.
+      // A saved choice wins; without one, follow the device's light/dark setting.
+      (function () {
+        var saved = null;
+        try {
+          saved = localStorage.getItem('theme');
+        } catch (e) {}
+        var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (dark) document.documentElement.classList.add('dark');
+      })();
+    </script>
     <style>
       /* ================ Theme tokens ================ */
       :root {
@@ -30,7 +39,7 @@
         --danger: #b91c1c;
         --focus: #1d4ed8;
       }
-      body.dark {
+      html.dark {
         --bg: #141414;
         --surface: #1f1f1f;
         --border: #2e2e2e;
@@ -104,6 +113,11 @@
         color: var(--primary-text);
         font-size: 15px;
         font-weight: 600;
+      }
+
+      .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: default;
       }
 
       /* ================ Header ================ */
@@ -393,18 +407,18 @@
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>';
       const SUN =
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>';
-      if (localStorage.getItem('theme') === 'dark') {
-        document.body.classList.add('dark');
-      }
+      const root = document.documentElement; // the theme class is set in <head>
       function updateThemeButton() {
-        const dark = document.body.classList.contains('dark');
+        const dark = root.classList.contains('dark');
         themeToggle.innerHTML = dark ? SUN : MOON;
         themeToggle.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
       }
       updateThemeButton();
       themeToggle.addEventListener('click', () => {
-        document.body.classList.toggle('dark');
-        localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+        root.classList.toggle('dark');
+        try {
+          localStorage.setItem('theme', root.classList.contains('dark') ? 'dark' : 'light');
+        } catch (e) {}
         updateThemeButton();
       });
 
@@ -430,10 +444,17 @@
         e.preventDefault();
         const token = adminInput.value;
         if (!token) return;
-        const res = await fetch('/admin-verify', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        let res;
+        try {
+          res = await fetch('/admin-verify', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        } catch (err) {
+          adminDialog.close();
+          setAdminStatus('No connection. Try again.', true);
+          return;
+        }
         adminDialog.close();
         if (res.ok) {
           adminToken = token;
@@ -465,6 +486,7 @@
       const errorDiv = document.getElementById('form-error');
       const commentsDiv = document.getElementById('comments');
       const charCount = document.getElementById('char-count');
+      const submitBtn = form.querySelector('button[type="submit"]');
       const MAX_LENGTH = 500;
 
       function updateCharCount() {
@@ -480,11 +502,22 @@
           errorDiv.textContent = 'Comment text is required.';
           return;
         }
-        const res = await fetch('/comments', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text }),
-        });
+        // Block a second click while this request is on its way
+        submitBtn.disabled = true;
+        let res;
+        try {
+          res = await fetch('/comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text }),
+          });
+        } catch (err) {
+          // The text stays in the field, so nothing is lost
+          errorDiv.textContent = "No connection. Your comment wasn't sent. Try again.";
+          return;
+        } finally {
+          submitBtn.disabled = false;
+        }
         if (res.ok) {
           const created = await res.json();
           rememberMine(created.id);
@@ -506,10 +539,16 @@
           errorDiv.textContent = 'Unauthorized to delete.';
           return;
         }
-        const res = await fetch(`/comments/${id}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${adminToken}` },
-        });
+        let res;
+        try {
+          res = await fetch(`/comments/${id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${adminToken}` },
+          });
+        } catch (err) {
+          errorDiv.textContent = "No connection. The comment wasn't deleted.";
+          return;
+        }
         if (res.ok) {
           older = older.filter((c) => c.id !== id);
           refreshComments();
@@ -542,10 +581,12 @@
         return formatAgo(ms) || new Date(iso).toLocaleDateString();
       }
 
-      function setLive(ok) {
-        liveDot.classList.toggle('paused', !ok);
-        if (!ok) {
+      function setLive(state) {
+        liveDot.classList.toggle('paused', state !== 'ok');
+        if (state === 'limited') {
           liveStatus.textContent = 'Live updates paused: too many requests';
+        } else if (state === 'offline') {
+          liveStatus.textContent = 'Offline · retrying';
         } else {
           liveStatus.textContent = `Live · updated ${formatAgo(Date.now() - lastUpdate) || 'a while ago'}`;
         }
@@ -599,15 +640,21 @@
 
       // ===== Polling for updates =====
       async function refreshComments() {
-        const res = await fetch(`/comments?limit=${PAGE_SIZE}`);
+        let res;
+        try {
+          res = await fetch(`/comments?limit=${PAGE_SIZE}`);
+        } catch (err) {
+          setLive('offline'); // the next poll tries again
+          return;
+        }
         if (res.status === 429) {
-          setLive(false);
+          setLive('limited');
           return;
         }
         if (!res.ok) return;
         newest = await res.json();
         lastUpdate = Date.now();
-        setLive(true);
+        setLive('ok');
         if (!older.length) moreOnServer = newest.length === PAGE_SIZE;
         renderComments();
       }
@@ -616,7 +663,13 @@
         const all = newest.concat(older);
         if (!all.length) return;
         const oldestId = Math.min(...all.map((c) => c.id));
-        const res = await fetch(`/comments?limit=${PAGE_SIZE}&before=${oldestId}`);
+        let res;
+        try {
+          res = await fetch(`/comments?limit=${PAGE_SIZE}&before=${oldestId}`);
+        } catch (err) {
+          errorDiv.textContent = "No connection. Couldn't load older comments.";
+          return;
+        }
         if (!res.ok) return;
         const page = await res.json();
         older = older.concat(page);
@@ -651,6 +704,9 @@
         document.head.appendChild(spinStyle);
         catStyles.push(spinStyle);
 
+        // with "reduce motion" set on the device, the cats still appear but don't spin
+        const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
         // spawn a spinning cat every 500ms; class 'cat-gif' lets us remove them all later
         catTimer = setInterval(() => {
           const gif = document.createElement('img');
@@ -660,7 +716,7 @@
             position: 'fixed',
             zIndex: 9999,
             width: '150px',
-            animation: 'spin 2s linear infinite',
+            animation: calm ? 'none' : 'spin 2s linear infinite',
             top: Math.random() * window.innerHeight + 'px',
             left: Math.random() * window.innerWidth + 'px',
             pointerEvents: 'none',
