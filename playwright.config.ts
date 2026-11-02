@@ -8,6 +8,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
+const LOCAL_URL = 'http://127.0.0.1:20000';
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -25,8 +27,10 @@ export default defineConfig({
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    /* Base URL to use in actions like `await page.goto('')`. */
-    baseURL: 'https://commentwall.up.railway.app/',
+    /* Base URL to use in actions like `await page.goto('')`.
+       By default the tests start the app locally (see webServer below), so a pull
+       request is tested with its own code. Set BASE_URL to check a deployed site. */
+    baseURL: process.env.BASE_URL || LOCAL_URL,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -70,10 +74,18 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
-  // webServer: {
-  //   command: 'npm run start',
-  //   url: 'http://localhost:3000',
-  //   reuseExistingServer: !process.env.CI,
-  // },
+  /* Start the app locally unless the tests target a deployed site.
+     Its database is E2E_DATABASE_URL (CI: a Postgres service), else a SQLite file.
+     DATABASE_URL is deliberately not passed on: in .env it points at production. */
+  webServer: process.env.BASE_URL
+    ? undefined
+    : {
+        command: `${process.env.PYTHON || 'python'} app.py`,
+        url: LOCAL_URL,
+        env: {
+          PORT: '20000',
+          DATABASE_URL: process.env.E2E_DATABASE_URL || 'sqlite:///e2e.db',
+        },
+        reuseExistingServer: !process.env.CI,
+      },
 });
