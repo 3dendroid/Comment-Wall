@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Comment Wall</title>
     <style>
       /* ================ box-sizing ================ */
@@ -42,7 +43,8 @@
       }
       /* common button style */
       .controls button,
-      .form-actions button {
+      .form-actions button,
+      dialog button {
         background: #e0e0e0;
         border: 1px solid #ccc;
         padding: 6px 12px;
@@ -52,7 +54,8 @@
         transition: background 0.3s, color 0.3s;
       }
       body.dark .controls button,
-      body.dark .form-actions button {
+      body.dark .form-actions button,
+      body.dark dialog button {
         background: #2e2e2e;
         border-color: #555;
         color: #eee;
@@ -62,7 +65,13 @@
       form {
         margin-bottom: 20px;
       }
-      textarea {
+      label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: bold;
+      }
+      textarea,
+      dialog input {
         width: 100%;
         height: 80px;
         padding: 10px;
@@ -74,18 +83,65 @@
         color: inherit;
         transition: background 0.3s, color 0.3s, border-color 0.3s;
       }
-      body.dark textarea {
+      body.dark textarea,
+      body.dark dialog input {
         border-color: #444;
       }
       .form-actions {
-        display: inline-flex;
+        display: flex;
         align-items: center;
         margin-top: 10px;
       }
       .error-message {
         margin-left: 10px;
-        color: red;
+        color: #c62828;
         font-size: 0.9rem;
+      }
+      body.dark .error-message {
+        color: #ff8a80;
+      }
+      .char-count {
+        margin-left: auto;
+        font-size: 0.85rem;
+        color: #666;
+      }
+      body.dark .char-count {
+        color: #aaa;
+      }
+      .admin-status {
+        margin-right: auto;
+        align-self: center;
+        font-size: 0.9rem;
+      }
+      .admin-status.error {
+        color: #c62828;
+      }
+      body.dark .admin-status.error {
+        color: #ff8a80;
+      }
+
+      /* ================ Admin sign-in dialog ================ */
+      dialog {
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 16px;
+        width: min(360px, 90vw);
+        background: #fff;
+        color: #000;
+      }
+      body.dark dialog {
+        background: #1e1e1e;
+        color: #eee;
+        border-color: #555;
+      }
+      dialog input {
+        height: auto;
+      }
+      .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 12px;
       }
 
       /* ================ Comments list ================ */
@@ -107,6 +163,22 @@
         flex-grow: 1;
         padding-right: 10px;
       }
+      .comment-time {
+        display: block;
+        margin-top: 4px;
+        font-size: 0.8rem;
+        color: #666;
+      }
+      body.dark .comment-time {
+        color: #aaa;
+      }
+      #loadOlder {
+        display: block;
+        margin: 10px auto;
+      }
+      #loadOlder[hidden] {
+        display: none;
+      }
       .delete-btn {
         background: #dc3545 !important;
         color: white !important;
@@ -122,6 +194,8 @@
     <h1>🧱 Comment Wall</h1>
 
     <div class="controls">
+      <!-- Admin sign-in result; kept apart from the comment form's errors -->
+      <span id="admin-status" class="admin-status" role="status"></span>
       <!-- Cat chaos trigger -->
       <button id="catJam">🐱 Make fun</button>
       <!-- Theme switch -->
@@ -130,22 +204,36 @@
       <button onclick="enableAdmin()">🔐 Admin Mode</button>
     </div>
 
+    <dialog id="adminDialog">
+      <form id="adminForm" method="dialog">
+        <label for="admin-token">Admin token</label>
+        <input type="password" id="admin-token" autocomplete="current-password" required />
+        <div class="dialog-actions">
+          <button type="button" id="adminCancel">Cancel</button>
+          <button type="submit">Sign in</button>
+        </div>
+      </form>
+    </dialog>
+
     <form id="commentForm">
-      <textarea name="text" id="comment-input" placeholder="Leave a comment..." required></textarea>
+      <label for="comment-input">Your comment</label>
+      <textarea name="text" id="comment-input" placeholder="Leave a comment..." maxlength="500" required></textarea>
       <div class="form-actions">
         <button type="submit">Submit</button>
-        <div id="form-error" class="error-message"></div>
+        <div id="form-error" class="error-message" role="alert"></div>
+        <span id="char-count" class="char-count">0 / 500</span>
       </div>
     </form>
 
     <div id="comments">
       {% for comment in comments %}
       <div class="comment" data-id="{{ comment.id }}">
-        <div class="comment-text">{{ comment.text }}</div>
+        <div class="comment-text">{{ comment.text }}{% if comment.created_at %}<time class="comment-time" datetime="{{ comment.created_at.isoformat() }}Z">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</time>{% endif %}</div>
         <button class="delete-btn" onclick="deleteComment({{ comment.id }})">Delete</button>
       </div>
       {% endfor %}
     </div>
+    <button id="loadOlder" type="button" hidden>Load older comments</button>
 
     <script>
       // ===== Dark mode toggle =====
@@ -166,27 +254,54 @@
 
       // ===== Admin mode =====
       let adminToken = null;
-      async function enableAdmin() {
-        const token = prompt('Enter admin token:');
+      const adminDialog = document.getElementById('adminDialog');
+      const adminForm = document.getElementById('adminForm');
+      const adminInput = document.getElementById('admin-token');
+      const adminStatus = document.getElementById('admin-status');
+
+      function setAdminStatus(text, isError) {
+        adminStatus.textContent = text;
+        adminStatus.classList.toggle('error', !!isError);
+      }
+
+      function enableAdmin() {
+        adminInput.value = '';
+        adminDialog.showModal();
+      }
+      document.getElementById('adminCancel').addEventListener('click', () => adminDialog.close());
+
+      adminForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const token = adminInput.value;
         if (!token) return;
-        document.getElementById('form-error').textContent = '';
         const res = await fetch('/admin-verify', {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
         });
+        adminDialog.close();
         if (res.ok) {
           adminToken = token;
           document.body.classList.add('admin-mode');
+          setAdminStatus('Admin mode on');
+          refreshComments();
+        } else if (res.status === 429) {
+          setAdminStatus('Too many attempts. Try again in a minute.', true);
         } else {
-          const data = await res.json();
-          document.getElementById('form-error').textContent = data.error;
+          setAdminStatus('Wrong admin token.', true);
         }
-      }
+      });
 
       // ===== Posting comments =====
       const form = document.getElementById('commentForm');
       const errorDiv = document.getElementById('form-error');
       const commentsDiv = document.getElementById('comments');
+      const charCount = document.getElementById('char-count');
+      const MAX_LENGTH = 500;
+
+      function updateCharCount() {
+        charCount.textContent = `${form.text.value.length} / ${MAX_LENGTH}`;
+      }
+      form.text.addEventListener('input', updateCharCount);
 
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -201,12 +316,14 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text }),
         });
-        const data = await res.json();
         if (res.ok) {
           form.text.value = '';
+          updateCharCount();
+          refreshComments(); // show the new comment now, not on the next poll
         } else if (res.status === 429) {
           errorDiv.textContent = "You're commenting too quickly. Please wait.";
         } else {
+          const data = await res.json().catch(() => ({}));
           errorDiv.textContent = data.error || 'Failed to post comment.';
         }
       });
@@ -222,17 +339,34 @@
           method: 'DELETE',
           headers: { Authorization: `Bearer ${adminToken}` },
         });
-        if (!res.ok) {
-          const data = await res.json();
+        if (res.ok) {
+          older = older.filter((c) => c.id !== id);
+          refreshComments();
+        } else {
+          const data = await res.json().catch(() => ({}));
           errorDiv.textContent = data.error || 'Failed to delete.';
         }
       }
 
-      // ===== Polling for updates =====
-      async function refreshComments() {
-        const res = await fetch('/comments');
-        if (!res.ok) return;
-        const list = await res.json();
+      // ===== Showing comments =====
+      const PAGE_SIZE = 50;
+      const loadOlderBtn = document.getElementById('loadOlder');
+      let newest = []; // the latest page, refreshed by polling
+      let older = []; // pages added with "Load older comments"
+      let moreOnServer = false;
+
+      function formatTime(iso) {
+        if (!iso) return '';
+        const seconds = (Date.now() - new Date(iso).getTime()) / 1000;
+        if (seconds < 60) return 'just now';
+        if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)} h ago`;
+        return new Date(iso).toLocaleDateString();
+      }
+
+      function renderComments() {
+        const oldestNewId = newest.length ? newest[newest.length - 1].id : Infinity;
+        const list = newest.concat(older.filter((c) => c.id < oldestNewId));
         commentsDiv.innerHTML = '';
         list.forEach((c) => {
           const el = document.createElement('div');
@@ -244,6 +378,14 @@
           const textEl = document.createElement('div');
           textEl.className = 'comment-text';
           textEl.textContent = c.text;
+          if (c.created_at) {
+            const timeEl = document.createElement('time');
+            timeEl.className = 'comment-time';
+            timeEl.dateTime = c.created_at;
+            timeEl.title = new Date(c.created_at).toLocaleString();
+            timeEl.textContent = formatTime(c.created_at);
+            textEl.appendChild(timeEl);
+          }
           el.appendChild(textEl);
 
           if (adminToken) {
@@ -256,7 +398,34 @@
 
           commentsDiv.appendChild(el);
         });
+        loadOlderBtn.hidden = !moreOnServer;
       }
+
+      // ===== Polling for updates =====
+      async function refreshComments() {
+        const res = await fetch(`/comments?limit=${PAGE_SIZE}`);
+        if (res.status === 429) {
+          errorDiv.textContent = 'Live updates paused: too many requests. Reload the page later.';
+          return;
+        }
+        if (!res.ok) return;
+        newest = await res.json();
+        if (!older.length) moreOnServer = newest.length === PAGE_SIZE;
+        renderComments();
+      }
+
+      loadOlderBtn.addEventListener('click', async () => {
+        const all = newest.concat(older);
+        if (!all.length) return;
+        const oldestId = Math.min(...all.map((c) => c.id));
+        const res = await fetch(`/comments?limit=${PAGE_SIZE}&before=${oldestId}`);
+        if (!res.ok) return;
+        const page = await res.json();
+        older = older.concat(page);
+        moreOnServer = page.length === PAGE_SIZE;
+        renderComments();
+      });
+
       refreshComments();
       setInterval(refreshComments, 5000);
 
