@@ -1,0 +1,6 @@
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+# Rules that catch bugs rather than style: pycodestyle errors, pyflakes, bugbear
+select = ["E", "F", "B"]

@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "A small Flask app for posting anonymous comments.",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/3dendroid/Comment-Wall.git"
@@ -19,6 +21,7 @@
     "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",
     "dotenv": "^18.0.9",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "typescript": "6.0.2"
   }
 }

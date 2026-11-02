@@ -131,3 +131,20 @@ def test_page_has_no_inline_scripts_styles_or_handlers(client):
     assert "<style" not in html
     assert not re.search(r"\son[a-z]+=", html)  # onclick=, onload=, ...
     assert ' style="' not in html
+
+
+def test_healthz_ok_and_never_rate_limited(client):
+    for _ in range(150):  # more than the 100/hour default limit
+        res = client.get("/healthz")
+        assert res.status_code == 200
+    assert res.get_json() == {"status": "ok"}
+
+
+def test_healthz_reports_unreachable_database(client, monkeypatch):
+    def broken(*args, **kwargs):
+        raise RuntimeError("connection refused")
+
+    monkeypatch.setattr(app_module.db.session, "execute", broken)
+    res = client.get("/healthz")
+    assert res.status_code == 503
+    assert res.get_json()["database"] == "unreachable"

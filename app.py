@@ -147,6 +147,19 @@ def latest_comments(limit=None, before=None):
     return query.all()
 
 
+@app.route("/healthz")
+@limiter.exempt  # probes run every few seconds and must never be rate limited
+def healthz():
+    """Liveness/readiness probe: cheap, and fails only if the database is unreachable."""
+    try:
+        db.session.execute(sql_text("SELECT 1"))
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Health check: database unreachable")
+        return jsonify({"status": "error", "database": "unreachable"}), 503
+    return jsonify({"status": "ok"}), 200
+
+
 @app.route("/")
 def index():
     """Render the main page showing the newest comments."""

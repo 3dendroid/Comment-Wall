@@ -38,9 +38,11 @@ spec:
           successThreshold: 1
           failureThreshold: 3
           periodSeconds: 10
+        # Liveness only checks the process is up (a database outage shouldn't restart pods);
+        # readiness takes the pod out of the Service while the database is unreachable.
         readinessProbe:
           httpGet:
-            path: /
+            path: /healthz
             port: 8000
           initialDelaySeconds: 5
           timeoutSeconds: 2

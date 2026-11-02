@@ -25,7 +25,8 @@ comment-wall/
 │   └── cat.mp3
 ├── bad_words.txt
 ├── requirements.txt
-├── requirements-dev.txt   # pytest
+├── requirements-dev.txt   # pytest, ruff
+├── pyproject.toml         # ruff settings
 ├── Procfile               # Railway deployment
 ├── Dockerfile             # container image
 ├── .dockerignore
@@ -44,9 +45,11 @@ comment-wall/
 ├── playwright.config.ts
 ├── tsconfig.json
 ├── package.json
-└── .github/workflows/
-    ├── playwright.yml     # CI: pytest + Playwright against a local server
-    └── smoke.yml          # manual read-only checks of production
+└── .github/
+    ├── dependabot.yml     # weekly update PRs for pip, npm and GitHub Actions
+    └── workflows/
+        ├── playwright.yml # CI: ruff, pytest, tsc, Playwright against a local server
+        └── smoke.yml      # manual read-only checks of production
 ```
 
 ## Run with Docker / Podman
@@ -76,6 +79,7 @@ kubectl apply -f k8s/deployment.yaml -f k8s/service.yaml
 | `GET /comments?limit=50`        | one page (1–100); continue with `&before=<id of the oldest comment you have>` |
 | `POST /comments` `{"text": …}`  | add a comment: 1–500 characters, a string, no bad words                       |
 | `DELETE /comments/<id>`         | delete, needs `Authorization: Bearer <ADMIN_TOKEN>`                           |
+| `GET /healthz`                  | `200 {"status": "ok"}`, or `503` when the database is unreachable; never rate limited |
 
 Rate limits per client IP: 1 `POST` per 5 seconds, 60 `GET /comments` per minute, 10 failed admin attempts per minute.
 The app trusts one proxy hop (`X-Forwarded-For`), as on Railway.
@@ -96,6 +100,7 @@ Every response carries a strict `Content-Security-Policy` (`default-src 'self'`,
 
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
+ruff check .
 pytest -q tests
 ```
 
@@ -118,6 +123,7 @@ UI tests use the **Page Object Model** (`e2e/pages/`) and a **custom fixture** `
 
 ```bash
 npm ci
+npm run typecheck
 npx playwright install chromium
 npx playwright test
 npx playwright show-report
@@ -135,7 +141,9 @@ The local test server gets a throwaway `ADMIN_TOKEN` (`e2e-admin-token`) for the
 
 ### CI
 
-`playwright.yml` runs on every pull request and push to `main`: pytest, then Playwright against the app started in the job with a throwaway PostgreSQL service.
+`playwright.yml` runs on every pull request and push to `main`: ruff and pytest, then `tsc` and Playwright against the app started in the job with a throwaway PostgreSQL service.
+
+Dependabot opens weekly PRs for pip, npm and GitHub Actions updates (minor and patch versions grouped); they go through the same CI.
 `main` is protected: a pull request can't be merged until the tests pass.
 
 `smoke.yml` runs the read-only Playwright tests against https://commentwall.up.railway.app/ — start it by hand in Actions after a deploy. It takes `DATABASE_URL` from the encrypted repository secret.
