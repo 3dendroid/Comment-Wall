@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import random
-
 import requests
 
 # Language codes from https://github.com/LDNOOBW/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words
@@ -11,6 +9,10 @@ LANGS = [
     'fr', 'fr-CA-u-sd-caqc', 'hu', 'hi', 'it', 'ja', 'kab', 'tlh',
     'ko', 'no', 'fa', 'pl', 'pt', 'ru', 'sv', 'th', 'tr'
 ]
+
+# Ordinary words that some of the lists contain; they block normal English
+# comments ("I am", "a big fan", "pros and cons"), so they are never written.
+EXCLUDE = {"am", "fan", "con"}
 
 BASE_URL = (
     "https://raw.githubusercontent.com/"
@@ -34,13 +36,8 @@ for lang in LANGS:
     except Exception as e:
         print(f"error ({e}), skipped")
 
-# Delete duplicates
-unique = list(set(all_words))
-print(f"Total unique words: {len(unique)}")
-random.shuffle(unique)
-
-# Get 5000 random words
-selected = unique[:5000]
+# Delete duplicates and excluded words; sort so the output is the same on every run
+selected = sorted(set(all_words) - EXCLUDE)
 print(f"Writing {len(selected)} words to bad_words.txt")
 
 with open("bad_words.txt", "w", encoding="utf-8") as f:
