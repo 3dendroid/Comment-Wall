@@ -38,6 +38,11 @@ test('A posted comment shows up right away', async ({ wall, page }) => {
   await wall.submitComment(text);
 
   // Polling runs every 5 s; the page must not wait for it
-  await expect(page.locator('.comment-text', { hasText: text })).toBeVisible({ timeout: 3000 });
+  const comment = page.locator('.comment', { hasText: text });
+  await expect(comment).toBeVisible({ timeout: 3000 });
   await expect(wall.commentInput).toHaveValue('');
+
+  // Your own comment is marked as yours
+  await expect(comment.locator('.comment-author')).toHaveText('You');
+  await expect(comment).toHaveClass(/mine/);
 });

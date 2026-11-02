@@ -6,7 +6,7 @@ A small Flask app for posting anonymous comments.
 
 Live: https://commentwall.up.railway.app/
 
-Features: bad-words filter, rate limiting, comment timestamps, "Load older" pagination, admin mode for deleting comments, and a 🐱 Make fun button (spinning cats + music, click again to stop).
+Features: bad-words filter, rate limiting, comment timestamps, "Load older" pagination, your own comments marked "You" (remembered in your browser), light and dark themes, admin mode for deleting comments, and a Make fun button (spinning cats + music, click again to stop).
 Storage: PostgreSQL in production, SQLite fallback for local runs.
 
 ## Project structure
@@ -16,7 +16,7 @@ comment-wall/
 ├── app.py
 ├── templates/
 │   └── index.html
-├── static/                # cat gif + music for the 🐱 button
+├── static/                # cat gif + music for the Make fun button
 │   ├── cat.gif
 │   └── cat.mp3
 ├── bad_words.txt
@@ -101,8 +101,8 @@ UI tests use the **Page Object Model** (`e2e/pages/`) and a **custom fixture** `
 
 | File                  | What it checks                                                                                           |
 | --------------------- | -------------------------------------------------------------------------------------------------------- |
-| `commentwall.spec.ts` | page title, input placeholder, character counter, page shows the API's first page, a new comment appears right away |
-| `buttons.spec.ts`     | Submit, Admin Mode and theme buttons; the theme button changes its label; Admin Mode opens the sign-in dialog |
+| `commentwall.spec.ts` | page title, input placeholder, character counter, page shows the API's first page, a new comment appears right away and is marked "You" |
+| `buttons.spec.ts`     | Post, admin and theme buttons; the theme button switches the theme; the admin button opens the sign-in dialog |
 | `api.spec.ts`         | `DELETE` without token → 401; `POST` with empty, non-string or too long text → 400                        |
 | `db.spec.ts`          | number of comments in the API = number of rows in PostgreSQL                                             |
 

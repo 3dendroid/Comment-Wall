@@ -4,246 +4,402 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Comment Wall</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
-      /* ================ box-sizing ================ */
-      html {
-        box-sizing: border-box;
+      /* ================ Theme tokens ================ */
+      :root {
+        --bg: #f4f3ef;
+        --surface: #ffffff;
+        --border: #e2dfd8;
+        --border-strong: #d6d3cc;
+        --input-border: #a8a29e;
+        --text: #18181b;
+        --muted: #57534e;
+        --accent: #1d4ed8;
+        --live: #15803d;
+        --paused: #b45309;
+        --error: #9a3412;
+        --error-bg: #fff4ed;
+        --primary-bg: #18181b;
+        --primary-text: #ffffff;
+        --danger: #b91c1c;
+        --focus: #1d4ed8;
       }
+      body.dark {
+        --bg: #141414;
+        --surface: #1f1f1f;
+        --border: #2e2e2e;
+        --border-strong: #3d3d3d;
+        --input-border: #6b6b6b;
+        --text: #ededed;
+        --muted: #b0aaa4;
+        --accent: #8ab4ff;
+        --live: #4ade80;
+        --paused: #fbbf24;
+        --error: #fdba74;
+        --error-bg: #2b1a0f;
+        --primary-bg: #ededed;
+        --primary-text: #141414;
+        --danger: #f87171;
+        --focus: #8ab4ff;
+      }
+
+      /* ================ Base ================ */
       *,
       *::before,
       *::after {
-        box-sizing: inherit;
+        box-sizing: border-box;
       }
-
-      /* ================ Theme variables & base ================ */
       body {
-        font-family: sans-serif;
-        max-width: 600px;
-        margin: 20px auto;
-        padding: 0 10px;
-        background: #fff;
-        color: #000;
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'IBM Plex Sans', system-ui, sans-serif;
         transition: background 0.3s, color 0.3s;
       }
-      body.dark {
-        background: #121212;
-        color: #eee;
+      .page {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 40px 16px 64px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+      }
+      :focus-visible {
+        outline: 2px solid var(--focus);
+        outline-offset: 2px;
+      }
+      .btn {
+        min-height: 44px;
+        padding: 0 14px;
+        border-radius: 8px;
+        border: 1px solid var(--border-strong);
+        background: var(--surface);
+        font-size: 14px;
+      }
+      .icon-btn {
+        width: 44px;
+        height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+      }
+      .btn-primary {
+        min-height: 44px;
+        padding: 0 20px;
+        border-radius: 8px;
+        border: none;
+        background: var(--primary-bg);
+        color: var(--primary-text);
+        font-size: 15px;
+        font-weight: 600;
       }
 
-      /* ================ Header & controls ================ */
+      /* ================ Header ================ */
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
       h1 {
-        text-align: center;
-        font-size: 1.8rem;
+        margin: 0;
+        font-size: 30px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .status-line {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--live);
+      }
+      .dot.paused {
+        background: var(--paused);
+      }
+      .admin-status:empty {
+        display: none;
+      }
+      .admin-status::before {
+        content: '·';
+        margin-right: 8px;
+      }
+      .admin-status.error {
+        color: var(--error);
       }
       .controls {
         display: flex;
-        justify-content: flex-end;
         gap: 8px;
-        margin-bottom: 10px;
-      }
-      /* common button style */
-      .controls button,
-      .form-actions button,
-      dialog button {
-        background: #e0e0e0;
-        border: 1px solid #ccc;
-        padding: 6px 12px;
-        border-radius: 4px;
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: background 0.3s, color 0.3s;
-      }
-      body.dark .controls button,
-      body.dark .form-actions button,
-      body.dark dialog button {
-        background: #2e2e2e;
-        border-color: #555;
-        color: #eee;
       }
 
-      /* ================ Form styling ================ */
-      form {
-        margin-bottom: 20px;
+      /* ================ Form ================ */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+      }
+      #commentForm {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
       }
       label {
-        display: block;
-        margin-bottom: 6px;
-        font-weight: bold;
+        font-size: 15px;
+        font-weight: 600;
       }
       textarea,
       dialog input {
         width: 100%;
-        height: 80px;
-        padding: 10px;
-        font-size: 1rem;
-        resize: vertical;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        background: inherit;
-        color: inherit;
-        transition: background 0.3s, color 0.3s, border-color 0.3s;
+        font: inherit;
+        font-size: 16px;
+        line-height: 1.5;
+        padding: 12px;
+        border: 1px solid var(--input-border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text);
       }
-      body.dark textarea,
-      body.dark dialog input {
-        border-color: #444;
+      textarea {
+        resize: vertical;
+        min-height: 110px;
+      }
+      textarea::placeholder {
+        color: var(--muted);
+      }
+      .form-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .hint {
+        font-size: 13px;
+        color: var(--muted);
       }
       .form-actions {
         display: flex;
         align-items: center;
-        margin-top: 10px;
-      }
-      .error-message {
-        margin-left: 10px;
-        color: #c62828;
-        font-size: 0.9rem;
-      }
-      body.dark .error-message {
-        color: #ff8a80;
+        gap: 14px;
       }
       .char-count {
+        font-family: 'IBM Plex Mono', ui-monospace, monospace;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .error-message {
+        font-size: 14px;
+        color: var(--error);
+        background: var(--error-bg);
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+      .error-message:empty {
+        display: none;
+      }
+
+      /* ================ Comments ================ */
+      .list-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+      }
+      h2 {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 600;
+      }
+      #comments {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .comment {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        transition: background 0.3s;
+      }
+      .comment.mine {
+        border: 2px solid var(--accent);
+        padding: 13px 15px;
+      }
+      .comment-meta {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .comment-author {
+        font-weight: 600;
+      }
+      .comment.mine .comment-author {
+        color: var(--accent);
+      }
+      .comment-text {
+        margin: 0;
+        font-size: 16px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .delete-btn {
+        display: none;
         margin-left: auto;
-        font-size: 0.85rem;
-        color: #666;
+        min-height: 32px;
+        padding: 0 10px;
+        border-radius: 6px;
+        border: 1px solid var(--danger);
+        background: transparent;
+        color: var(--danger);
+        font-size: 13px;
       }
-      body.dark .char-count {
-        color: #aaa;
+      .admin-mode .delete-btn {
+        display: inline-block;
       }
-      .admin-status {
-        margin-right: auto;
+      #loadOlder {
         align-self: center;
-        font-size: 0.9rem;
+        background: transparent;
       }
-      .admin-status.error {
-        color: #c62828;
-      }
-      body.dark .admin-status.error {
-        color: #ff8a80;
+      #loadOlder[hidden] {
+        display: none;
       }
 
       /* ================ Admin sign-in dialog ================ */
       dialog {
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        padding: 16px;
         width: min(360px, 90vw);
-        background: #fff;
-        color: #000;
+        padding: 20px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--surface);
+        color: var(--text);
       }
-      body.dark dialog {
-        background: #1e1e1e;
-        color: #eee;
-        border-color: #555;
+      dialog::backdrop {
+        background: rgba(0, 0, 0, 0.4);
       }
-      dialog input {
-        height: auto;
+      #adminForm {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
       }
       .dialog-actions {
         display: flex;
         justify-content: flex-end;
         gap: 8px;
-        margin-top: 12px;
-      }
-
-      /* ================ Comments list ================ */
-      .comment {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: #f3f3f3;
-        padding: 10px;
-        margin-bottom: 10px;
-        border-radius: 6px;
-        word-break: break-word;
-        transition: background 0.3s;
-      }
-      body.dark .comment {
-        background: #1e1e1e;
-      }
-      .comment-text {
-        flex-grow: 1;
-        padding-right: 10px;
-      }
-      .comment-time {
-        display: block;
         margin-top: 4px;
-        font-size: 0.8rem;
-        color: #666;
-      }
-      body.dark .comment-time {
-        color: #aaa;
-      }
-      #loadOlder {
-        display: block;
-        margin: 10px auto;
-      }
-      #loadOlder[hidden] {
-        display: none;
-      }
-      .delete-btn {
-        background: #dc3545 !important;
-        color: white !important;
-        border: none !important;
-        display: none;
-      }
-      .admin-mode .delete-btn {
-        display: inline-block !important;
       }
     </style>
   </head>
   <body>
-    <h1>🧱 Comment Wall</h1>
-
-    <div class="controls">
-      <!-- Admin sign-in result; kept apart from the comment form's errors -->
-      <span id="admin-status" class="admin-status" role="status"></span>
-      <!-- Cat chaos trigger -->
-      <button id="catJam">🐱 Make fun</button>
-      <!-- Theme switch -->
-      <button id="themeToggle">🌙 Switch Theme</button>
-      <!-- Admin Mode always on the right -->
-      <button onclick="enableAdmin()">🔐 Admin Mode</button>
-    </div>
-
-    <dialog id="adminDialog">
-      <form id="adminForm" method="dialog">
-        <label for="admin-token">Admin token</label>
-        <input type="password" id="admin-token" autocomplete="current-password" required />
-        <div class="dialog-actions">
-          <button type="button" id="adminCancel">Cancel</button>
-          <button type="submit">Sign in</button>
+    <div class="page">
+      <header>
+        <div>
+          <h1>Comment Wall</h1>
+          <div class="status-line">
+            <span id="live-dot" class="dot" aria-hidden="true"></span>
+            <span id="live-status">Live</span>
+            <!-- Admin sign-in result -->
+            <span id="admin-status" class="admin-status" role="status"></span>
+          </div>
         </div>
-      </form>
-    </dialog>
+        <div class="controls">
+          <!-- Cat chaos trigger -->
+          <button id="catJam" class="btn" type="button">Make fun</button>
+          <!-- Theme switch -->
+          <button id="themeToggle" class="btn icon-btn" type="button" aria-label="Switch to dark theme"></button>
+          <!-- Admin Mode always on the right -->
+          <button class="btn icon-btn" type="button" aria-label="Admin sign in" onclick="enableAdmin()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+          </button>
+        </div>
+      </header>
 
-    <form id="commentForm">
-      <label for="comment-input">Your comment</label>
-      <textarea name="text" id="comment-input" placeholder="Leave a comment..." maxlength="500" required></textarea>
-      <div class="form-actions">
-        <button type="submit">Submit</button>
+      <dialog id="adminDialog">
+        <form id="adminForm" method="dialog">
+          <label for="admin-token">Admin token</label>
+          <input type="password" id="admin-token" autocomplete="current-password" required />
+          <div class="dialog-actions">
+            <button type="button" class="btn" id="adminCancel">Cancel</button>
+            <button type="submit" class="btn-primary">Sign in</button>
+          </div>
+        </form>
+      </dialog>
+
+      <form id="commentForm" class="card">
+        <label for="comment-input">Your comment</label>
+        <textarea name="text" id="comment-input" placeholder="Leave a comment..." maxlength="500" rows="4" required></textarea>
+        <div class="form-row">
+          <span class="hint">Anonymous · be kind</span>
+          <div class="form-actions">
+            <span id="char-count" class="char-count">0 / 500</span>
+            <button type="submit" class="btn-primary">Post</button>
+          </div>
+        </div>
         <div id="form-error" class="error-message" role="alert"></div>
-        <span id="char-count" class="char-count">0 / 500</span>
-      </div>
-    </form>
+      </form>
 
-    <div id="comments">
-      {% for comment in comments %}
-      <div class="comment" data-id="{{ comment.id }}">
-        <div class="comment-text">{{ comment.text }}{% if comment.created_at %}<time class="comment-time" datetime="{{ comment.created_at.isoformat() }}Z">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</time>{% endif %}</div>
-        <button class="delete-btn" onclick="deleteComment({{ comment.id }})">Delete</button>
-      </div>
-      {% endfor %}
+      <section aria-labelledby="comments-heading" style="display: flex; flex-direction: column; gap: 10px">
+        <div class="list-head">
+          <h2 id="comments-heading">Comments</h2>
+          <span class="hint">Newest first</span>
+        </div>
+        <div id="comments">
+          {% for comment in comments %}
+          <article class="comment" data-id="{{ comment.id }}">
+            <div class="comment-meta">
+              <span class="comment-author">Anonymous</span>
+              {% if comment.created_at %}<span>·</span><time datetime="{{ comment.created_at.isoformat() }}Z">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</time>{% endif %}
+              <button class="delete-btn" type="button" onclick="deleteComment({{ comment.id }})">Delete</button>
+            </div>
+            <p class="comment-text">{{ comment.text }}</p>
+          </article>
+          {% endfor %}
+        </div>
+        <button id="loadOlder" class="btn" type="button" hidden>Load older comments</button>
+      </section>
     </div>
-    <button id="loadOlder" type="button" hidden>Load older comments</button>
 
     <script>
       // ===== Dark mode toggle =====
       const themeToggle = document.getElementById('themeToggle');
+      const MOON =
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>';
+      const SUN =
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>';
       if (localStorage.getItem('theme') === 'dark') {
         document.body.classList.add('dark');
       }
       function updateThemeButton() {
         const dark = document.body.classList.contains('dark');
-        themeToggle.textContent = (dark ? '☀️' : '🌙') + ' Switch Theme';
+        themeToggle.innerHTML = dark ? SUN : MOON;
+        themeToggle.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
       }
       updateThemeButton();
       themeToggle.addEventListener('click', () => {
@@ -291,6 +447,19 @@
         }
       });
 
+      // ===== Own comments (marked "You") =====
+      // Kept in this browser only; the wall itself stays anonymous.
+      let myIds = [];
+      try {
+        myIds = JSON.parse(localStorage.getItem('myComments') || '[]');
+      } catch (e) {}
+      function rememberMine(id) {
+        myIds = myIds.concat(id).slice(-200);
+        try {
+          localStorage.setItem('myComments', JSON.stringify(myIds));
+        } catch (e) {}
+      }
+
       // ===== Posting comments =====
       const form = document.getElementById('commentForm');
       const errorDiv = document.getElementById('form-error');
@@ -317,11 +486,13 @@
           body: JSON.stringify({ text }),
         });
         if (res.ok) {
+          const created = await res.json();
+          rememberMine(created.id);
           form.text.value = '';
           updateCharCount();
           refreshComments(); // show the new comment now, not on the next poll
         } else if (res.status === 429) {
-          errorDiv.textContent = "You're commenting too quickly. Please wait.";
+          errorDiv.textContent = "You're posting too fast. Try again in a few seconds.";
         } else {
           const data = await res.json().catch(() => ({}));
           errorDiv.textContent = data.error || 'Failed to post comment.';
@@ -351,17 +522,33 @@
       // ===== Showing comments =====
       const PAGE_SIZE = 50;
       const loadOlderBtn = document.getElementById('loadOlder');
+      const liveDot = document.getElementById('live-dot');
+      const liveStatus = document.getElementById('live-status');
       let newest = []; // the latest page, refreshed by polling
       let older = []; // pages added with "Load older comments"
       let moreOnServer = false;
+      let lastUpdate = null;
 
-      function formatTime(iso) {
-        if (!iso) return '';
-        const seconds = (Date.now() - new Date(iso).getTime()) / 1000;
+      function formatAgo(ms) {
+        const seconds = ms / 1000;
         if (seconds < 60) return 'just now';
         if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
         if (seconds < 86400) return `${Math.floor(seconds / 3600)} h ago`;
-        return new Date(iso).toLocaleDateString();
+        return null;
+      }
+
+      function formatTime(iso) {
+        const ms = Date.now() - new Date(iso).getTime();
+        return formatAgo(ms) || new Date(iso).toLocaleDateString();
+      }
+
+      function setLive(ok) {
+        liveDot.classList.toggle('paused', !ok);
+        if (!ok) {
+          liveStatus.textContent = 'Live updates paused: too many requests';
+        } else {
+          liveStatus.textContent = `Live · updated ${formatAgo(Date.now() - lastUpdate) || 'a while ago'}`;
+        }
       }
 
       function renderComments() {
@@ -369,33 +556,42 @@
         const list = newest.concat(older.filter((c) => c.id < oldestNewId));
         commentsDiv.innerHTML = '';
         list.forEach((c) => {
-          const el = document.createElement('div');
-          el.className = 'comment';
+          const mine = myIds.includes(c.id);
+          const el = document.createElement('article');
+          el.className = mine ? 'comment mine' : 'comment';
           el.dataset.id = c.id;
 
           // Build nodes instead of innerHTML string — comment text is set via
           // textContent, so markup in a comment is shown as text, not executed.
-          const textEl = document.createElement('div');
-          textEl.className = 'comment-text';
-          textEl.textContent = c.text;
+          const meta = document.createElement('div');
+          meta.className = 'comment-meta';
+          const author = document.createElement('span');
+          author.className = 'comment-author';
+          author.textContent = mine ? 'You' : 'Anonymous';
+          meta.appendChild(author);
           if (c.created_at) {
+            const sep = document.createElement('span');
+            sep.textContent = '·';
             const timeEl = document.createElement('time');
-            timeEl.className = 'comment-time';
             timeEl.dateTime = c.created_at;
             timeEl.title = new Date(c.created_at).toLocaleString();
             timeEl.textContent = formatTime(c.created_at);
-            textEl.appendChild(timeEl);
+            meta.append(sep, timeEl);
           }
-          el.appendChild(textEl);
-
           if (adminToken) {
             const btn = document.createElement('button');
             btn.className = 'delete-btn';
+            btn.type = 'button';
             btn.textContent = 'Delete';
             btn.addEventListener('click', () => deleteComment(c.id));
-            el.appendChild(btn);
+            meta.appendChild(btn);
           }
 
+          const textEl = document.createElement('p');
+          textEl.className = 'comment-text';
+          textEl.textContent = c.text;
+
+          el.append(meta, textEl);
           commentsDiv.appendChild(el);
         });
         loadOlderBtn.hidden = !moreOnServer;
@@ -405,11 +601,13 @@
       async function refreshComments() {
         const res = await fetch(`/comments?limit=${PAGE_SIZE}`);
         if (res.status === 429) {
-          errorDiv.textContent = 'Live updates paused: too many requests. Reload the page later.';
+          setLive(false);
           return;
         }
         if (!res.ok) return;
         newest = await res.json();
+        lastUpdate = Date.now();
+        setLive(true);
         if (!older.length) moreOnServer = newest.length === PAGE_SIZE;
         renderComments();
       }
