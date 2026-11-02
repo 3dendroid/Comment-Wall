@@ -4,66 +4,43 @@
 
 A small Flask app for posting anonymous comments.
 
-Live: https://comment-wall.com/
+**Live:** https://comment-wall.com/
 
-The domain `comment-wall.com` is registered at Porkbun (auto-renew on) and points at the Railway service: an `ALIAS` record on the root to the Railway target, plus a `_railway-verify` TXT record. Railway issues and renews the HTTPS certificate. The Railway address https://commentwall.up.railway.app/ still works too.
+## Features
 
-Features: bad-words filter, rate limiting, comment timestamps, "Load older" pagination, your own comments marked "You" (remembered in your browser), light and dark themes (follows the device setting until you pick one), admin mode for deleting comments, and a Make fun button (spinning cats + music, click again to stop).
-Storage: PostgreSQL in production, SQLite fallback for local runs.
+- Anonymous comments up to 500 characters, newest first, with timestamps
+- Live updates every 5 seconds; your own new comment shows up right away
+- Your own comments are marked "You" (remembered in your browser only)
+- "Load older comments" pagination
+- Bad-words filter, also catching spaced (`f u c k`) and stretched (`fuuuck`) spellings
+- Rate limiting per visitor
+- Light and dark themes, following the device setting until you pick one
+- Clear messages when the network is down or you post too fast
+- Admin mode (lock icon) for deleting comments
+- A Make fun button: spinning cats and music, click again to stop (no spinning with "reduce motion")
 
-## Project structure
+**Stack:** Python 3.12, Flask, SQLAlchemy, Flask-Limiter, gunicorn. PostgreSQL in production, SQLite for local runs. No front-end framework: plain HTML, CSS and JavaScript.
 
-```
-comment-wall/
-├── app.py
-├── templates/
-│   └── index.html
-├── static/                # page CSS/JS, site icon, cat gif + music for the Make fun button
-│   ├── style.css
-│   ├── theme.js           # loaded in <head>: sets the theme before the page is drawn
-│   ├── app.js             # everything else the page does
-│   └── fonts/             # IBM Plex, self-hosted (SIL OFL 1.1, see OFL.txt)
-│   ├── cat.gif
-│   └── cat.mp3
-├── bad_words.txt
-├── requirements.txt
-├── requirements-dev.txt   # pytest, ruff
-├── pyproject.toml         # ruff settings
-├── Procfile               # Railway deployment
-├── Dockerfile             # container image
-├── .dockerignore
-├── k8s/                   # namespace, deployment, service
-├── tests/                 # API tests (pytest)
-├── e2e/                   # Playwright tests
-│   ├── pages/
-│   │   └── CommentWallPage.ts  # Page Object
-│   ├── fixtures.ts             # custom fixture "wall"
-│   ├── commentwall.spec.ts     # UI tests + UI vs API check
-│   ├── buttons.spec.ts         # button tests
-│   ├── api.spec.ts             # negative API tests
-│   ├── ux.spec.ts              # network errors, theme, reduced motion, icon, fonts, double click
-│   ├── security.spec.ts        # CSP header, no CSP violations, admin delete
-│   └── db.spec.ts              # API vs database check
-├── playwright.config.ts
-├── tsconfig.json
-├── package.json
-└── .github/
-    ├── dependabot.yml     # weekly update PRs for pip, npm and GitHub Actions
-    └── workflows/
-        ├── playwright.yml # CI: ruff, pytest, tsc, Playwright against a local server
-        └── smoke.yml      # manual read-only checks of production
+## Run locally
+
+```bash
+pip install -r requirements.txt
+python app.py
 ```
 
-## Run with Docker / Podman
+Open http://localhost:20000. Without `DATABASE_URL` the app uses SQLite in `instance/comments.db`.
+To try admin mode, start it with a token, e.g. `ADMIN_TOKEN=secret python app.py`, and sign in with the lock icon.
+
+### With Docker / Podman
 
 ```bash
 podman build -t comment-wall:v1 .
 podman run -d --name comment-wall -p 8080:8000 comment-wall:v1
 ```
 
-Open http://localhost:8080
+Open http://localhost:8080. The container runs gunicorn as an unprivileged user.
 
-## Run on Kubernetes
+### On Kubernetes
 
 The deployment reads `DATABASE_URL` and `ADMIN_TOKEN` from a secret named `comment-wall`:
 
@@ -73,28 +50,38 @@ kubectl -n comment-wall create secret generic comment-wall --from-literal=DATABA
 kubectl apply -f k8s/deployment.yaml -f k8s/service.yaml
 ```
 
-## API
-
-| Request                         | What it does                                                                 |
-| ------------------------------- | ---------------------------------------------------------------------------- |
-| `GET /comments`                 | all comments, newest first: `{id, text, created_at}`                          |
-| `GET /comments?limit=50`        | one page (1–100); continue with `&before=<id of the oldest comment you have>` |
-| `POST /comments` `{"text": …}`  | add a comment: 1–500 characters, a string, no bad words                       |
-| `DELETE /comments/<id>`         | delete, needs `Authorization: Bearer <ADMIN_TOKEN>`                           |
-| `GET /healthz`                  | `200 {"status": "ok"}`, or `503` when the database is unreachable; never rate limited |
-
-Rate limits per client IP: 1 `POST` per 5 seconds, 60 `GET /comments` per minute, 10 failed admin attempts per minute.
-The app trusts one proxy hop (`X-Forwarded-For`), as on Railway.
-
-Every response carries a strict `Content-Security-Policy` (`default-src 'self'`, no inline scripts or styles), `X-Content-Type-Options: nosniff` and `Referrer-Policy: same-origin`. Keep page code in `static/`: an inline `<script>`, `style="…"` or `onclick=` would be blocked.
+The readiness probe uses `/healthz`, so a pod stops receiving traffic while the database is unreachable. Liveness is a plain TCP check, so a database outage doesn't restart pods.
 
 ## Configuration
 
-| Variable       | Purpose                      | Default               |
-| -------------- | ---------------------------- | --------------------- |
-| `DATABASE_URL` | PostgreSQL connection string | SQLite in `instance/` |
-| `ADMIN_TOKEN`  | token for admin mode         | —                     |
-| `REDIS_URL`    | rate-limit storage           | in memory             |
+| Variable       | Purpose                                    | Default                                    |
+| -------------- | ------------------------------------------ | ------------------------------------------ |
+| `DATABASE_URL` | PostgreSQL connection string               | SQLite in `instance/comments.db`           |
+| `ADMIN_TOKEN`  | token for admin mode; unset = admin is off | —                                          |
+| `PORT`         | port to listen on                          | `20000` (`python app.py`), `8000` (Docker) |
+| `REDIS_URL`    | rate-limit storage, needed with >1 replica | in memory                                  |
+
+## API
+
+| Request                        | What it does                                                                          |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| `GET /comments`                | all comments, newest first: `{id, text, created_at}`                                  |
+| `GET /comments?limit=50`       | one page (1–100); continue with `&before=<id of the oldest comment you have>`         |
+| `POST /comments` `{"text": …}` | add a comment: a string of 1–500 characters with no bad words                          |
+| `DELETE /comments/<id>`        | delete a comment; needs `Authorization: Bearer <ADMIN_TOKEN>`                         |
+| `POST /admin-verify`           | check an admin token without changing anything (used by the sign-in dialog)          |
+| `GET /healthz`                 | `200 {"status": "ok"}`, or `503` when the database is unreachable; never rate limited |
+
+Rate limits per client IP: 1 `POST` per 5 seconds, 60 `GET /comments` per minute, 10 failed admin attempts per minute. The app trusts one proxy hop (`X-Forwarded-For`), as on Railway.
+
+Older databases are upgraded on start: the `created_at` column is added if it's missing. Comments from before that have no timestamp.
+
+## Security
+
+- Every response carries a strict `Content-Security-Policy` (`default-src 'self'`, no inline code), `X-Content-Type-Options: nosniff` and `Referrer-Policy: same-origin`. **Keep page code in `static/`**: an inline `<script>`, `style="…"` or `onclick=` in the template would be blocked by the browser.
+- Comment text is always inserted as text, never as HTML.
+- The admin token is compared in constant time and has no default; failed attempts are rate limited.
+- Fonts are self-hosted, so visitors' browsers don't contact Google.
 
 ## Tests
 
@@ -106,22 +93,9 @@ ruff check .
 pytest -q tests
 ```
 
-They use a temporary SQLite database and check validation, rate limits, pagination, admin access and the bad-words filter.
+They use a temporary SQLite database and cover validation, rate limits, pagination, admin access, the bad-words filter, security headers, `/healthz`, and upgrading an old database.
 
 ### End-to-end tests (Playwright + TypeScript)
-
-By default Playwright starts the app locally (`python app.py` on port 20000) and tests it, so every pull request is tested with its own code.
-
-UI tests use the **Page Object Model** (`e2e/pages/`) and a **custom fixture** `wall` (`e2e/fixtures.ts`). The fixture creates the page object and opens the page before the test.
-
-| File                  | What it checks                                                                                           |
-| --------------------- | -------------------------------------------------------------------------------------------------------- |
-| `commentwall.spec.ts` | page title, input placeholder, character counter, page shows the API's first page, a new comment appears right away and is marked "You" |
-| `buttons.spec.ts`     | Post, admin and theme buttons; the theme button switches the theme; the admin button opens the sign-in dialog |
-| `security.spec.ts`    | strict Content-Security-Policy is sent, using the page triggers no CSP violations, an admin can sign in and delete a comment |
-| `ux.spec.ts`          | network errors are shown, theme is set before the page is drawn and follows the device, cats don't spin with "reduce motion", site icon loads, fonts come from this site, a double click posts once |
-| `api.spec.ts`         | `DELETE` without token → 401; `POST` with empty, non-string or too long text → 400                        |
-| `db.spec.ts`          | number of comments in the API = number of rows in PostgreSQL                                             |
 
 ```bash
 npm ci
@@ -131,21 +105,85 @@ npx playwright test
 npx playwright show-report
 ```
 
-| Variable           | Purpose                                                                                     |
-| ------------------ | ------------------------------------------------------------------------------------------- |
-| `E2E_DATABASE_URL` | database of the local test server; SQLite (`instance/e2e.db`) if unset. `db.spec.ts` runs only with PostgreSQL |
-| `BASE_URL`         | test a deployed site instead of starting one; tests that write data are skipped              |
-| `DATABASE_URL`     | used by `db.spec.ts` only together with `BASE_URL` (the production database)                 |
-| `PYTHON`           | Python command for the local server, `python` by default                                     |
+By default Playwright starts the app locally (`python app.py` on port 20000) and tests it, so every pull request is tested with its own code. UI tests use the **Page Object Model** (`e2e/pages/`) and a **custom fixture** `wall` (`e2e/fixtures.ts`) that creates the page object and opens the page.
 
-The local test server gets a throwaway `ADMIN_TOKEN` (`e2e-admin-token`) for the admin tests and never receives `DATABASE_URL`, so a production URL in `.env` is safe: tests can't write to the production database by accident.
-`.env` is in `.gitignore` and `.dockerignore`, so it is never committed or copied into the image.
+| File                  | What it checks                                                                                                                                       |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `commentwall.spec.ts` | page title, input placeholder, character counter, page shows the API's first page, a new comment appears right away and is marked "You"              |
+| `buttons.spec.ts`     | Post, admin and theme buttons; the theme button switches the theme; the admin button opens the sign-in dialog                                        |
+| `ux.spec.ts`          | network errors are shown, theme is set before the page is drawn and follows the device, no spinning with "reduce motion", site icon, self-hosted fonts, a double click posts once |
+| `security.spec.ts`    | strict CSP is sent, using the page triggers no CSP violations, an admin can sign in and delete a comment                                              |
+| `api.spec.ts`         | `DELETE` without token → 401; `POST` with empty, non-string or too long text → 400                                                                   |
+| `db.spec.ts`          | number of comments in the API = number of rows in PostgreSQL                                                                                         |
+
+| Variable           | Purpose                                                                                                          |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `E2E_DATABASE_URL` | database of the local test server; SQLite (`instance/e2e.db`) if unset. `db.spec.ts` runs only with PostgreSQL  |
+| `BASE_URL`         | test a deployed site instead of starting one; tests that write data are skipped                                  |
+| `DATABASE_URL`     | used by `db.spec.ts` only together with `BASE_URL` (the production database)                                     |
+| `PYTHON`           | Python command for the local server, `python` by default                                                         |
+
+The local test server gets a throwaway `ADMIN_TOKEN` (`e2e-admin-token`) for the admin tests and never receives `DATABASE_URL`, so a production URL in `.env` is safe: tests can't write to the production database by accident. `.env` is in `.gitignore` and `.dockerignore`, so it is never committed or copied into the image.
 
 ### CI
 
-`playwright.yml` runs on every pull request and push to `main`: ruff and pytest, then `tsc` and Playwright against the app started in the job with a throwaway PostgreSQL service.
+- `playwright.yml` runs on every pull request and push to `main`: ruff and pytest, then `tsc` and Playwright against the app started in the job with a throwaway PostgreSQL service. `main` is protected: a pull request can't be merged until it passes.
+- `smoke.yml` runs the read-only Playwright tests against https://comment-wall.com/. Start it by hand (Actions → Production smoke tests → Run workflow) after a deploy. It takes `DATABASE_URL` from the encrypted repository secret.
 
-Dependabot opens weekly PRs for pip, npm and GitHub Actions updates (minor and patch versions grouped); they go through the same CI.
-`main` is protected: a pull request can't be merged until the tests pass.
+## Deployment
 
-`smoke.yml` runs the read-only Playwright tests against https://comment-wall.com/ — start it by hand in Actions after a deploy. It takes `DATABASE_URL` from the encrypted repository secret.
+The app runs on [Railway](https://railway.app), which deploys `main` with the `Procfile` (gunicorn on Railway's `PORT`) and provides PostgreSQL through `DATABASE_URL`.
+
+The domain `comment-wall.com` is registered at Porkbun (auto-renew on) and points at the Railway service: an `ALIAS` record on the root to the Railway target, plus a `_railway-verify` TXT record. Railway issues and renews the HTTPS certificate. The Railway address https://commentwall.up.railway.app/ still works too.
+
+## Maintenance
+
+- **Dependencies:** Dependabot opens weekly PRs for pip, npm and GitHub Actions (minor and patch versions grouped; major versions come one by one). They run through the same CI: merge them when it's green, and read the release notes of major updates first.
+- **Bad-words list:** `bad_words.txt` is built by `bad_words_generator.py` from the [LDNOOBW](https://github.com/LDNOOBW/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words) lists. To rebuild it: `pip install requests && python bad_words_generator.py`. Ordinary words that cause false positives go into `EXCLUDE` in that script.
+
+## Project structure
+
+```
+comment-wall/
+├── app.py                     # Flask app: routes, model, rate limits, security headers
+├── templates/
+│   └── index.html             # page markup only (no inline code)
+├── static/
+│   ├── style.css
+│   ├── theme.js               # loaded in <head>: sets the theme before the page is drawn
+│   ├── app.js                 # everything else the page does
+│   ├── favicon.svg
+│   ├── fonts/                 # IBM Plex, self-hosted (SIL OFL 1.1, see OFL.txt)
+│   ├── cat.gif                # for the Make fun button
+│   └── cat.mp3
+├── bad_words.txt
+├── bad_words_generator.py     # rebuilds bad_words.txt
+├── requirements.txt
+├── requirements-dev.txt       # pytest, ruff
+├── pyproject.toml             # ruff settings
+├── Procfile                   # Railway
+├── Dockerfile
+├── .dockerignore
+├── k8s/                       # namespace, deployment, service
+├── tests/                     # API tests (pytest)
+│   ├── conftest.py
+│   └── test_app.py
+├── e2e/                       # Playwright tests
+│   ├── pages/
+│   │   └── CommentWallPage.ts # Page Object
+│   ├── fixtures.ts            # custom fixture "wall"
+│   ├── commentwall.spec.ts
+│   ├── buttons.spec.ts
+│   ├── ux.spec.ts
+│   ├── security.spec.ts
+│   ├── api.spec.ts
+│   └── db.spec.ts
+├── playwright.config.ts
+├── tsconfig.json
+├── package.json
+└── .github/
+    ├── dependabot.yml         # weekly update PRs
+    └── workflows/
+        ├── playwright.yml     # CI
+        └── smoke.yml          # manual checks of production
+```
