@@ -6,7 +6,7 @@ A small Flask app for posting anonymous comments.
 
 Live: https://commentwall.up.railway.app/
 
-Features: bad-words filter, rate limiting, comment timestamps, "Load older" pagination, your own comments marked "You" (remembered in your browser), light and dark themes, admin mode for deleting comments, and a Make fun button (spinning cats + music, click again to stop).
+Features: bad-words filter, rate limiting, comment timestamps, "Load older" pagination, your own comments marked "You" (remembered in your browser), light and dark themes (follows the device setting until you pick one), admin mode for deleting comments, and a Make fun button (spinning cats + music, click again to stop).
 Storage: PostgreSQL in production, SQLite fallback for local runs.
 
 ## Project structure
@@ -16,7 +16,8 @@ comment-wall/
 ├── app.py
 ├── templates/
 │   └── index.html
-├── static/                # cat gif + music for the Make fun button
+├── static/                # site icon, cat gif + music for the Make fun button
+│   └── fonts/             # IBM Plex, self-hosted (SIL OFL 1.1, see OFL.txt)
 │   ├── cat.gif
 │   └── cat.mp3
 ├── bad_words.txt
@@ -34,6 +35,7 @@ comment-wall/
 │   ├── commentwall.spec.ts     # UI tests + UI vs API check
 │   ├── buttons.spec.ts         # button tests
 │   ├── api.spec.ts             # negative API tests
+│   ├── ux.spec.ts              # network errors, theme, reduced motion, icon, fonts, double click
 │   └── db.spec.ts              # API vs database check
 ├── playwright.config.ts
 ├── tsconfig.json
@@ -103,6 +105,7 @@ UI tests use the **Page Object Model** (`e2e/pages/`) and a **custom fixture** `
 | --------------------- | -------------------------------------------------------------------------------------------------------- |
 | `commentwall.spec.ts` | page title, input placeholder, character counter, page shows the API's first page, a new comment appears right away and is marked "You" |
 | `buttons.spec.ts`     | Post, admin and theme buttons; the theme button switches the theme; the admin button opens the sign-in dialog |
+| `ux.spec.ts`          | network errors are shown, theme is set before the page is drawn and follows the device, cats don't spin with "reduce motion", site icon loads, fonts come from this site, a double click posts once |
 | `api.spec.ts`         | `DELETE` without token → 401; `POST` with empty, non-string or too long text → 400                        |
 | `db.spec.ts`          | number of comments in the API = number of rows in PostgreSQL                                             |
 
