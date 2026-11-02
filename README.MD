@@ -6,7 +6,7 @@ A small Flask app for posting anonymous comments.
 
 Live: https://commentwall.up.railway.app/
 
-Features: bad-words filter, rate limiting, admin mode for deleting comments, and a 🐱 Make fun button (spinning cats + music, click again to stop).
+Features: bad-words filter, rate limiting, comment timestamps, "Load older" pagination, admin mode for deleting comments, and a 🐱 Make fun button (spinning cats + music, click again to stop).
 Storage: PostgreSQL in production, SQLite fallback for local runs.
 
 ## Project structure
@@ -21,9 +21,12 @@ comment-wall/
 │   └── cat.mp3
 ├── bad_words.txt
 ├── requirements.txt
+├── requirements-dev.txt   # pytest
 ├── Procfile               # Railway deployment
 ├── Dockerfile             # container image
 ├── .dockerignore
+├── k8s/                   # namespace, deployment, service
+├── tests/                 # API tests (pytest)
 ├── e2e/                   # Playwright tests
 │   ├── pages/
 │   │   └── CommentWallPage.ts  # Page Object
@@ -36,7 +39,8 @@ comment-wall/
 ├── tsconfig.json
 ├── package.json
 └── .github/workflows/
-    └── playwright.yml     # CI
+    ├── playwright.yml     # CI: pytest + Playwright against a local server
+    └── smoke.yml          # manual read-only checks of production
 ```
 
 ## Run with Docker / Podman
@@ -48,27 +52,59 @@ podman run -d --name comment-wall -p 8080:8000 comment-wall:v1
 
 Open http://localhost:8080
 
+## Run on Kubernetes
+
+The deployment reads `DATABASE_URL` and `ADMIN_TOKEN` from a secret named `comment-wall`:
+
+```bash
+kubectl apply -f k8s/namespace.yaml
+kubectl -n comment-wall create secret generic comment-wall --from-literal=DATABASE_URL='postgresql://...' --from-literal=ADMIN_TOKEN='...'
+kubectl apply -f k8s/deployment.yaml -f k8s/service.yaml
+```
+
+## API
+
+| Request                         | What it does                                                                 |
+| ------------------------------- | ---------------------------------------------------------------------------- |
+| `GET /comments`                 | all comments, newest first: `{id, text, created_at}`                          |
+| `GET /comments?limit=50`        | one page (1–100); continue with `&before=<id of the oldest comment you have>` |
+| `POST /comments` `{"text": …}`  | add a comment: 1–500 characters, a string, no bad words                       |
+| `DELETE /comments/<id>`         | delete, needs `Authorization: Bearer <ADMIN_TOKEN>`                           |
+
+Rate limits per client IP: 1 `POST` per 5 seconds, 60 `GET /comments` per minute, 10 failed admin attempts per minute.
+The app trusts one proxy hop (`X-Forwarded-For`), as on Railway.
+
 ## Configuration
 
 | Variable       | Purpose                      | Default               |
 | -------------- | ---------------------------- | --------------------- |
 | `DATABASE_URL` | PostgreSQL connection string | SQLite in `instance/` |
 | `ADMIN_TOKEN`  | token for admin mode         | —                     |
+| `REDIS_URL`    | rate-limit storage           | in memory             |
 
 ## Tests
 
-End-to-end tests with **Playwright + TypeScript**. They run against the live app on Railway.
+### API tests (pytest)
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+pytest -q tests
+```
+
+They use a temporary SQLite database and check validation, rate limits, pagination, admin access and the bad-words filter.
+
+### End-to-end tests (Playwright + TypeScript)
+
+By default Playwright starts the app locally (`python app.py` on port 20000) and tests it, so every pull request is tested with its own code.
 
 UI tests use the **Page Object Model** (`e2e/pages/`) and a **custom fixture** `wall` (`e2e/fixtures.ts`). The fixture creates the page object and opens the page before the test.
 
-| File                  | What it checks                                                                                     |
-| --------------------- | -------------------------------------------------------------------------------------------------- |
-| `commentwall.spec.ts` | page title, placeholder in the comment input, number of comments on the page = number in the API   |
-| `buttons.spec.ts`     | Submit, Admin Mode and theme buttons are visible; the theme button changes its label after a click |
-| `api.spec.ts`         | `DELETE` without token → 401, `POST` with empty text → 400                                         |
-| `db.spec.ts`          | number of comments in the API = number of rows in PostgreSQL                                       |
-
-### Run locally
+| File                  | What it checks                                                                                           |
+| --------------------- | -------------------------------------------------------------------------------------------------------- |
+| `commentwall.spec.ts` | page title, input placeholder, character counter, page shows the API's first page, a new comment appears right away |
+| `buttons.spec.ts`     | Submit, Admin Mode and theme buttons; the theme button changes its label; Admin Mode opens the sign-in dialog |
+| `api.spec.ts`         | `DELETE` without token → 401; `POST` with empty, non-string or too long text → 400                        |
+| `db.spec.ts`          | number of comments in the API = number of rows in PostgreSQL                                             |
 
 ```bash
 npm ci
@@ -77,10 +113,19 @@ npx playwright test
 npx playwright show-report
 ```
 
-`db.spec.ts` needs `DATABASE_URL`. Put it in a `.env` file in the project root. `.env` is in `.gitignore` and `.dockerignore`, so it is never committed or copied into the image.
+| Variable           | Purpose                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| `E2E_DATABASE_URL` | database of the local test server; SQLite (`instance/e2e.db`) if unset. `db.spec.ts` runs only with PostgreSQL |
+| `BASE_URL`         | test a deployed site instead of starting one; tests that write data are skipped              |
+| `DATABASE_URL`     | used by `db.spec.ts` only together with `BASE_URL` (the production database)                 |
+| `PYTHON`           | Python command for the local server, `python` by default                                     |
+
+The local test server never receives `DATABASE_URL`, so a production URL in `.env` is safe: tests can't write to the production database by accident.
+`.env` is in `.gitignore` and `.dockerignore`, so it is never committed or copied into the image.
 
 ### CI
 
-GitHub Actions runs the tests on every pull request and push to `main`.
-In CI, `DATABASE_URL` comes from an encrypted repository secret.
+`playwright.yml` runs on every pull request and push to `main`: pytest, then Playwright against the app started in the job with a throwaway PostgreSQL service.
 `main` is protected: a pull request can't be merged until the tests pass.
+
+`smoke.yml` runs the read-only Playwright tests against https://commentwall.up.railway.app/ — start it by hand in Actions after a deploy. It takes `DATABASE_URL` from the encrypted repository secret.
