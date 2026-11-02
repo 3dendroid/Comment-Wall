@@ -4,7 +4,9 @@
 
 A small Flask app for posting anonymous comments.
 
-Live: https://commentwall.up.railway.app/
+Live: https://comment-wall.com/
+
+The domain `comment-wall.com` is registered at Porkbun (auto-renew on) and points at the Railway service: an `ALIAS` record on the root to the Railway target, plus a `_railway-verify` TXT record. Railway issues and renews the HTTPS certificate. The Railway address https://commentwall.up.railway.app/ still works too.
 
 Features: bad-words filter, rate limiting, comment timestamps, "Load older" pagination, your own comments marked "You" (remembered in your browser), light and dark themes (follows the device setting until you pick one), admin mode for deleting comments, and a Make fun button (spinning cats + music, click again to stop).
 Storage: PostgreSQL in production, SQLite fallback for local runs.
@@ -146,4 +148,4 @@ The local test server gets a throwaway `ADMIN_TOKEN` (`e2e-admin-token`) for the
 Dependabot opens weekly PRs for pip, npm and GitHub Actions updates (minor and patch versions grouped); they go through the same CI.
 `main` is protected: a pull request can't be merged until the tests pass.
 
-`smoke.yml` runs the read-only Playwright tests against https://commentwall.up.railway.app/ — start it by hand in Actions after a deploy. It takes `DATABASE_URL` from the encrypted repository secret.
+`smoke.yml` runs the read-only Playwright tests against https://comment-wall.com/ — start it by hand in Actions after a deploy. It takes `DATABASE_URL` from the encrypted repository secret.

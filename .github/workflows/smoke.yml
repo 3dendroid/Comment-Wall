@@ -8,7 +8,7 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     env:
-      BASE_URL: https://commentwall.up.railway.app/
+      BASE_URL: https://comment-wall.com/
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
       - uses: actions/checkout@v7
